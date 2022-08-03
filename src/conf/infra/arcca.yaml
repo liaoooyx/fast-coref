@@ -1,0 +1,10 @@
+is_local: False
+job_time: ???
+job_id: ???
+work_dir: "/scratch/c.c21051562/workspace/fast-coref"
+
+
+#hydra:
+#  run:
+#    dir:
+#      /share/data/speech/shtoshni/research/fast-coref/slurm_scripts/thesis/${job_id}.log

@@ -1,0 +1,9 @@
+is_local: True
+project_dir: /home/yuxiangliao/PhD/workspace/git_clone_repos/fast-coref
+work_dir: ${project_dir}/src/
+
+
+#hydra:
+#  run:
+#    dir:
+#      "~/Research/fast-coref/models"

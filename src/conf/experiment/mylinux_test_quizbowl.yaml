@@ -1,0 +1,28 @@
+# @package _global_
+
+# Debug configuration
+# Use base model
+
+
+defaults:
+  # litbank
+  - override /datasets: quizbowl
+  - override /trainer: train.yaml
+  # The pre-trained doc_encoder model is downloaded and cached locally
+  - override /model/doc_encoder/transformer: longformer_joint_mylinux_local
+
+trainer:
+  log_frequency: 40
+  # Stop when no improvement in 10 evaluations 
+  patience: 10
+  # 13 hours
+  max_evals: 64
+  # 320 steps(docs) / 15 min -> 4 evals / 1 hour
+  eval_per_k_steps: 640
+  # num_training_steps = max_evals * eval_per_k_steps # We don't need to set this
+
+use_wandb: False
+
+# There are two cases where we don't resume training:
+# (a) The dev performance has not improved for the allowed patience parameter number of evaluations.
+# (b) Number of gradient updates is already >= Total training steps.

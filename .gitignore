@@ -11,3 +11,6 @@ outputs/
 slurm_scripts/
 wandb/
 .hydra/
+
+coref_resources/
+fast-coref-model-backup/

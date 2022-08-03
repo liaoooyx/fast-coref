@@ -1,0 +1,5 @@
+name: 'longformer'
+model_size: 'large'
+model_str: '/scratch/c.c21051562/workspace/fast-coref/models/longformer_coreference_joint'
+max_encoder_segment_len: 4096
+max_segment_len: 4096

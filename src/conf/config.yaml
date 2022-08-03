@@ -1,6 +1,9 @@
 metrics: ['MUC', 'Bcub', 'CEAFE']
-keep_singletons: True
+keep_singletons: False
 seed: 45
+# Set to True as we want to fine-tune the model (except for the encoder) on a custom dataset
+# When train:False is set, the program will go to [eval] mode. See main.py -> main_eval() for details.
+# When train:True is set, the program will go to [train] mode. See main.py -> main_train() for details.
 train: True
 use_wandb: False
 
@@ -9,32 +12,77 @@ use_wandb: False
 # python main.py experiment=eval_all paths.model_dir=../models/ontonotes_best/
 #  model/doc_encoder/transformer=longformer_ontonotes override_encoder=True
 # Here we override the longformer_large encoder with longformer_ontonotes encoder uploaded on Huggingface
-override_encoder: False
+
+# Set to True as we want to use the pre-trained encoder. 
+# We will also set the /model/doc_encoder/transformer.yaml finetune:False, as we don't want to fine-tune the pre-trained encoder.
+override_encoder: True
 
 # USeful for testing models with different memory architecture than the one trained on
 override_memory: False
 
+# Custom config
+# Copy the best model (pretrained model) from {pretrain_model_dir} to {best_model_dir} 
+# This config works only when {train: True} is set. See main.py -> def main_train(config) -> if config.copy_from_pretrained_model for details
+copy_from_pretrained_model: False
+# Specify the {model_name}, and continue training the model.
+# If this set to True, then {copy_from_pretrained_model} will not work
+# We update the checkpoint['config'] with current config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps)
+continue_training: False
+
 defaults:
   - _self_
-  - datasets: litbank
+  - datasets: quizbowl
   - model: model
   - optimizer: adam
   - trainer: train
-  - infra: local
-
-  - experiment: debug
+  
+  # arcca/mylinux, arcca_test/mylinux_test
+  - infra: ???
+  - experiment: ???
 
 paths:
-  resource_dir: ${infra.work_dir}/../../coref_resources
+  resource_dir: ${infra.project_dir}/coref_resources
   base_data_dir: ${paths.resource_dir}/data
   conll_scorer: ${paths.resource_dir}/reference-coreference-scorers/scorer.pl
-  base_model_dir: ${infra.work_dir}/../models
+  base_model_dir: ${infra.project_dir}/models
+  
+  # In [train] mode, {model_dir} will be set to {base_model_dir}/{model_name_prefix}+{model_name}, even if we assign a value here.
+  # And the {model_dir} folder will be created if not exist.
+  # In [eval] mode, {model_dir} is required. E.g. python main.py experiment=ontonotes_pseudo paths.model_dir=../models/joint_best/ train=False
   model_dir: null
+  
+  # In [train] mode, this will be set to {model_dir}/best, even if we assign a value here.
+  # And the {best_model_dir} folder will be created if not exist.
+  # In [eval] mode, this will be set to {model_dir}/best, when the {model_dir} has a subfolder call /best, or just {model_dir} otherwise.
   best_model_dir: null
+  
+  # Don't change this, as this name will be used in [train] and [eval] for saving and loading models.
   model_filename: 'model.pth'
+  
+  # In [train] mode, it will get a new model name if {model_name} is null. We can assign the model name here to prevent auto create. 
+  # In [eval] mode, it will be automatically identified according to the {model_dir}
   model_name: null
+  
+  # In [eval] mode, this is used to stript the prefix of model folder name in order to get the model name.
   model_name_prefix: 'coref_'
+  
+  # In [train] mode, it will be set to {model_dir}/{model_filename} when it is null.
+  # At the same time, it will also set the {best_model_path} to be {best_model_dir}/{model_filename} 
+  # When it is not null, the {best_model_path} will be set to the same as {model_path}
   model_path: null
+  
+  # In [train] mode, it will be set to {best_model_dir}/{model_filename}.
+  # However, if {model_path} has value and {best_model_dir} is null, its value will become the same as {model_path}
+  # In [eval] mode, this will be set to {best_model_dir}/{model_filename} like:
+  # ./fast-coref/models/coref_litbank_cv_0_fb7c919da4efcfe7579bbdbda9822e4e/best/model.pth, or
+  # ./fast-coref/models/joint_best/model.pth. It depends on whether the {model_dir} has a subfolder call /best
   best_model_path: null
+  
   doc_encoder_dirname: 'doc_encoder'
+  
+  # This is a custom variable.
+  # As want fine-tune on a pretrained model, we will copy the model under this dir to {best_model_dir}.
+  # Then {best_model_path} is exist and hence the pretrained model will be loaded at the beginning of training prcess.
+  # See experiment.py -> def _load_previous_checkpoint(self) for details.
+  pretrain_model_dir: ${paths.base_model_dir}/joint_best
 

@@ -6,7 +6,7 @@ import torch
 import json
 import numpy as np
 import random
-import wandb
+# import wandb
 
 from omegaconf import OmegaConf
 from os import path
@@ -49,8 +49,9 @@ class Experiment:
         # Initialize model path attributes
         self.model_path = self.config.paths.model_path
         self.best_model_path = self.config.paths.best_model_path
-
+        
         if not self.eval_model:
+            logger.debug(f"Initial for training")
             # Step 1 - Initialize model
             self._build_model()
             # Step 2 - Load Data - Data processing choices such as tokenizer will depend on the model
@@ -63,14 +64,17 @@ class Experiment:
             # All set to resume training
             # But first check if training is remaining
             if self._is_training_remaining():
+                # raise ValueError("Force stop before the training start")
                 self.train()
 
         # Perform final evaluation
         if path.exists(self.best_model_path):
+            logger.debug(f"Perform final evaluation (Initial for evaluation)")
             # Step 1 - Initialize model
             self._initialize_best_model()
             # Step 2 - Load evaluation data
             self._load_data()
+            # raise ValueError("Force stop before the evaluation start")
             # Step 3 - Perform evaluation
             self.perform_final_eval()
         else:
@@ -79,7 +83,10 @@ class Experiment:
 
     def _build_model(self) -> None:
         """Constructs the model with given config."""
-
+        logger.debug(f"Step 1 - Initialize the EntityRankingModel")
+        logger.debug(f"model_params:{self.config.model}")
+        logger.debug(f"train_config:{self.config.trainer}")
+        
         model_params: DictConfig = self.config.model
         train_config: DictConfig = self.config.trainer
 
@@ -108,6 +115,7 @@ class Experiment:
                 num_training_steps (int): Number of total training steps.
                 eval_per_k_steps (int): Number of gradient updates before each evaluation.
         """
+        logger.debug(f"Step 2 - Load Data - Data processing choices such as tokenizer will depend on the model")
 
         self.num_train_docs_map, self.data_iter_map, self.conll_data_dir = {}, {}, {}
         raw_data_map = {}
@@ -116,6 +124,7 @@ class Experiment:
         model_name: str = self.config.model.doc_encoder.transformer.name
         add_speaker_tokens: bool = self.config.model.doc_encoder.add_speaker_tokens
         base_data_dir: str = path.abspath(self.config.paths.base_data_dir)
+        logger.debug(f"--self.config.paths.base_data_dir:{self.config.paths.base_data_dir}")
 
         # Load data
         for dataset_name, attributes in self.config.datasets.items():
@@ -215,19 +224,31 @@ class Experiment:
 
     def _load_previous_checkpoint(self):
         """Loads the last checkpoint or best checkpoint."""
+        logger.debug(f"Step 4 - Loading the checkpoint also restores the training metadata")
 
         # Resume training
         if path.exists(self.model_path):
+            logger.debug(f"Resume training model from the last checkpoint")
             self.load_model(self.model_path, last_checkpoint=True)
             logger.info("Model loaded\n")
         else:
-            # Starting training
-            torch.random.manual_seed(self.config.seed)
-            np.random.seed(self.config.seed)
-            random.seed(self.config.seed)
+            # Custom code
+            # We add a new logic here. When the last checkpoint does not exist, it will check the best checkpoint.
+            # This is because we copy the pretrained model to the {paths.best_model_dir} when overwritting the config in main.py
+            # Hence, we are able to fine-tune the pretrained model
+            if path.exists(self.best_model_path):
+                logger.debug(f"Resume training model from the best checkpoint")
+                self.load_model(self.best_model_path, last_checkpoint=False)
+                logger.info("Model loaded\n")
+            else:
+                # Starting training
+                logger.debug(f"Initial a training model with random parameters")
+                torch.random.manual_seed(self.config.seed)
+                np.random.seed(self.config.seed)
+                random.seed(self.config.seed)
 
-            logger.info("Model initialized\n")
-            sys.stdout.flush()
+                logger.info("Model initialized\n")
+                sys.stdout.flush()
 
     def _is_training_remaining(self):
         """Check if training is done or remaining.
@@ -241,14 +262,19 @@ class Experiment:
         """
 
         if self.train_info["num_stuck_evals"] >= self.config.trainer.patience:
+            logger.debug(f'Triggered train_info["num_stuck_evals"] ({self.train_info["num_stuck_evals"]}) >= config.trainer.patience ({self.config.trainer.patience})')
+            logger.debug(f"Stop training")
             return False
         if self.train_info["global_steps"] >= self.config.trainer.num_training_steps:
+            logger.debug(f'Triggered train_info["global_steps"] ({self.train_info["global_steps"]}) >= config.trainer.num_training_steps ({self.config.trainer.num_training_steps})')
+            logger.debug(f"Stop training")
             return False
 
         return True
 
     def _setup_training(self):
         """Initialize optimizer and bookkeeping variables for training."""
+        logger.debug(f"Step 3 - Resume training")
 
         # Dictionary to track key training variables
         self.train_info = {
@@ -264,6 +290,9 @@ class Experiment:
 
     def _initialize_optimizers(self):
         """Initialize model + optimizer(s). Check if there's a checkpoint in which case we resume from there."""
+        logger.debug(f"Initialize optimizers")
+        logger.debug(f"optimizer_config:{self.config.optimizer}")
+        logger.debug(f"train_config:{self.config.trainer}")
 
         optimizer_config: DictConfig = self.config.optimizer
         train_config: DictConfig = self.config.trainer
@@ -275,6 +304,8 @@ class Experiment:
         else:
             self.scaler = None
 
+        logger.debug(f"self.scaler:{self.scaler}")
+        
         # Optimizer for clustering params
         self.optimizer["mem"] = torch.optim.Adam(
             self.model.get_params()[1], lr=optimizer_config.init_lr, eps=1e-6
@@ -291,8 +322,11 @@ class Experiment:
                 num_warmup_steps=0,
                 num_training_steps=train_config.num_training_steps,
             )
+        logger.debug(f"self.optimizer:{self.optimizer}")
+        logger.debug(f"self.optim_scheduler:{self.optim_scheduler}")
 
         if self.config.model.doc_encoder.finetune:
+            logger.debug(f"doc_encoder.finetune is [{doc_encoder.finetune}], set up optimizer for document encoder")
             # Optimizer for document encoder
             no_decay = [
                 "bias",
@@ -341,6 +375,7 @@ class Experiment:
         This method implements the training loop.
         Within the training loop, the model is periodically evaluated on the dev set(s).
         """
+        logger.debug(f"Now in the method of training the model")
 
         model, optimizer, scheduler, scaler = (
             self.model,
@@ -424,7 +459,7 @@ class Experiment:
                         self.train_info["max_mem"] = max_mem
 
                     logger.info(
-                        "{} {:.3f} Max mem {:.1f} GB".format(
+                        "cur_document:{}, loss:{:.3f}, Max mem {:.1f} GB".format(
                             cur_document["doc_key"],
                             loss,
                             max_mem,
@@ -433,13 +468,13 @@ class Experiment:
                     sys.stdout.flush()
                     if torch.cuda.is_available():
                         torch.cuda.reset_peak_memory_stats()
-                    if self.config.use_wandb:
-                        wandb.log(
-                            {
-                                "train/loss": loss,
-                                "batch": self.train_info["global_steps"],
-                            }
-                        )
+                    # if self.config.use_wandb:
+                    #     wandb.log(
+                    #         {
+                    #             "train/loss": loss,
+                    #             "batch": self.train_info["global_steps"],
+                    #         }
+                    #     )
 
                 if train_config.eval_per_k_steps and (
                     self.train_info["global_steps"] % train_config.eval_per_k_steps == 0
@@ -478,8 +513,8 @@ class Experiment:
 
                         if rem_time < avg_eval_time:
                             logger.info("Canceling job as not much time left")
-                            if self.config.use_wandb:
-                                wandb.mark_preempting()
+                            # if self.config.use_wandb:
+                            #     wandb.mark_preempting()
                             sys.exit()
 
             # Check stopping criteria
@@ -491,20 +526,21 @@ class Experiment:
         for key in result_dict:
             # Log result for individual metrics
             if isinstance(result_dict[key], dict):
-                wandb.log(
-                    {
-                        f"{split}/{dataset}/{key}": result_dict[key].get("fscore", 0.0),
-                        "batch": self.train_info["global_steps"],
-                    }
-                )
+                pass
+                # wandb.log(
+                #     {
+                #         f"{split}/{dataset}/{key}": result_dict[key].get("fscore", 0.0),
+                #         "batch": self.train_info["global_steps"],
+                #     }
+                # )
 
         # Log the overall F-score
-        wandb.log(
-            {
-                f"{split}/{dataset}/CoNLL": result_dict.get("fscore", 0.0),
-                "batch": self.train_info["global_steps"],
-            }
-        )
+        # wandb.log(
+        #     {
+        #         f"{split}/{dataset}/CoNLL": result_dict.get("fscore", 0.0),
+        #         "batch": self.train_info["global_steps"],
+        #     }
+        # )
 
     @torch.no_grad()
     def periodic_model_eval(self) -> float:
@@ -527,8 +563,8 @@ class Experiment:
                 conll_data_dir=self.conll_data_dir,
             )
             fscore_dict[dataset] = result_dict.get("fscore", 0.0)
-            if self.config.use_wandb:
-                self._wandb_log(result_dict, dataset=dataset, split="dev")
+            # if self.config.use_wandb:
+            #     self._wandb_log(result_dict, dataset=dataset, split="dev")
 
         logger.info(fscore_dict)
         # Calculate Mean F-score
@@ -560,7 +596,8 @@ class Experiment:
     @torch.no_grad()
     def perform_final_eval(self) -> None:
         """Method to evaluate the model after training has finished."""
-
+        logger.debug(f"Step 3 - Perform evaluation")
+        
         self.model.eval()
         base_output_dict = OmegaConf.to_container(self.config)
         perf_summary = {"best_perf": self.train_info["val_perf"]}
@@ -570,8 +607,8 @@ class Experiment:
         logger.info(
             "Max training memory: %.1f GB" % self.train_info.get("max_mem", 0.0)
         )
-        if self.config.use_wandb:
-            wandb.log({"Max Training Memory": self.train_info.get("max_mem", 0.0)})
+        # if self.config.use_wandb:
+        #     wandb.log({"Max Training Memory": self.train_info.get("max_mem", 0.0)})
 
         logger.info("Validation performance: %.1f" % self.train_info["val_perf"])
 
@@ -603,8 +640,8 @@ class Experiment:
                     final_eval=True,
                     conll_data_dir=self.conll_data_dir,
                 )
-                if self.config.use_wandb:
-                    self._wandb_log(result_dict, dataset=dataset, split=split)
+                # if self.config.use_wandb:
+                #     self._wandb_log(result_dict, dataset=dataset, split=split)
 
                 dataset_output_dict[dataset][split] = result_dict
                 perf_summary[split] = result_dict["fscore"]
@@ -631,13 +668,23 @@ class Experiment:
             summary_file = path.join(
                 perf_dir, str(self.config.infra.job_id) + gold_ment_str + ".json"
             )
-
+            
         json.dump(perf_summary, open(summary_file, "w"), indent=2)
         logger.info("Performance summary file: %s" % path.abspath(summary_file))
 
     def _initialize_best_model(self):
+        logger.debug(f"Step 1 - Initialize best model for evaluation")
+        logger.debug(f"Load checkpoint from best_model_path:{self.best_model_path}")
+        logger.debug(f"Original self.config:{self.config}")
+        
+        # Save for later reuse
+        local_config = self.config.copy()
+        
         checkpoint = torch.load(self.best_model_path, map_location="cpu")
+        # Load config from checkpoint model
         config = checkpoint["config"]
+        logger.debug(f'config=checkpoint["config"]:{config}')
+        
         # Copying the saved model config to current config is very important to avoid any issues while
         # loading the saved model. To give an example, model might be saved with the speaker tags
         # (training: experiment=ontonotes_speaker)
@@ -645,6 +692,8 @@ class Experiment:
         # However, overriding the encoder is possible -- This method is a bit hacky but allows for overriding the pretrained
         # transformer model from command line.
         if self.config.get("override_encoder", False):
+            logger.debug(f"Use the pre-downloaded decoder (from hugging face).")
+            logger.debug(f"self.config.model.doc_encoder.transformer{self.config.model.doc_encoder.transformer}")
             model_config = config.model
             model_config.doc_encoder.transformer = (
                 self.config.model.doc_encoder.transformer
@@ -656,11 +705,19 @@ class Experiment:
             model_config = config.model
             model_config.memory = self.config.model.memory
 
+        # Overwrite self.config to checkpoint config
+        # From [joint_best/]: 'model': {'doc_encoder': {'transformer': {'name': 'longformer', 'model_size': 'large', 'model_str': 'allenai/longformer-large-4096', 'max_encoder_segment_len': 4096, 'max_segment_len': 4096}, 'chunking': 'independent', 'finetune': True, 'add_speaker_tokens': True, 'speaker_start': '[SPEAKER_START]', 'speaker_end': '[SPEAKER_END]'}, 'memory': {'mem_type': {'name': 'unbounded', 'max_ents': None, 'eval_max_ents': None}, 'emb_size': 20, 'mlp_size': 3000, 'mlp_depth': 1, 'sim_func': 'hadamard', 'entity_rep': 'wt_avg', 'num_feats': 2}, 'mention_params': {'max_span_width': 20, 'ment_emb': 'attn', 'use_gold_ments': False, 'use_topk': False, 'top_span_ratio': 0.4, 'emb_size': 20, 'mlp_size': 3000, 'mlp_depth': 1, 'ment_emb_to_size_factor': {'attn': 3, 'endpoint': 2, 'max': 1}}, 'metadata_params': {'use_genre_feature': False, 'default_genre': 'nw', 'genres': ['bc', 'bn', 'mz', 'nw', 'pt', 'tc', 'wb']}},
         self.config.model = config.model
-
+        
+        # Example: 'train_info': {'val_perf': 72.4, 'global_steps': 60, 'num_stuck_evals': 0, 'peak_memory': 0.0, 'max_mem': 0.0}
         self.train_info = checkpoint["train_info"]
+        logger.debug(f"train_info:{self.train_info}")
+        
 
+        # If {model.doc_encoder.finetune} in checkpoint is true, (which will also assume that the training stage has fine-tuned and saved the doc_encoder)
+        # it will load the doc_encoder from {paths.best_model_dir}/{paths.doc_encoder_dirname}, if this path exist.
         if self.config.model.doc_encoder.finetune:
+            logger.debug(f"Need to load the document encoder params as doc_encoder.finetune is set to [True] in the loaded model")
             # Load the document encoder params if encoder is finetuned
             doc_encoder_dir = path.join(
                 path.dirname(self.best_model_path),
@@ -671,7 +728,16 @@ class Experiment:
                     "Loading document encoder from %s" % path.abspath(doc_encoder_dir)
                 )
                 config.model.doc_encoder.transformer.model_str = doc_encoder_dir
+            else:
+                logger.debug(f"The doc encoder does not exist in {doc_encoder_dir}, skipped.")
+                logger.debug(f"Loading document encoder from: {config.model.doc_encoder.transformer.model_str} ")
 
+        logger.debug(f"New config:{self.config}")
+        # The doc_encoder will be loaded together with other modules inside the EntityRankingModel
+        # The above setting is just modifying the path from which the doc_encoder will be loaded
+        logger.debug(f"Load the EntityRankingModel")
+        logger.debug(f"config.model:{config.model}")
+        logger.debug(f"config.trainer:{config.trainer}")
         self.model = EntityRankingModel(config.model, config.trainer)
         # Document encoder parameters will be loaded via the huggingface initialization
         self.model.load_state_dict(checkpoint["model"], strict=False)
@@ -688,16 +754,50 @@ class Experiment:
                         Whether the checkpoint is the last one saved or not.
                         If false, don't load optimizers, schedulers, and other training variables.
         """
+        logger.debug(f"Load checkpoint from: {location}, last_checkpoint:[{last_checkpoint}]")
 
         checkpoint = torch.load(location, map_location="cpu")
         logger.info("Loading model from %s" % path.abspath(location))
-
-        self.config = checkpoint["config"]
-        self.model.load_state_dict(checkpoint["model"], strict=False)
-        self.train_info = checkpoint["train_info"]
-
+        
+        # In our new added fine-tuning mode,
+        # it is dangerous to load all the checkpoint["config"] (from the pre-trained model) to self.config, 
+        # Because the pretrained model was trained in a different environment and their configs could be different.
+        # Therefore, when in the fine-tuning mode, we only overwrite part of the configs that are necessary.
+        # And don't load the train_info, in the fine-tuning mode.
+        logger.debug(f"Original self.config:{self.config}")
+        logger.debug(f"checkpoint['config']:{checkpoint['config']}")
+        if self.config.copy_from_pretrained_model and not self.config.continue_training:
+            logger.debug(f"This is fine-tuning mode, we merge self.config with checkpoint['config']")
+            merge_config = self.config.copy()
+            merge_config['model'] = checkpoint['config']['model']
+            merge_config['model']['doc_encoder']['transformer'] = self.config.model.doc_encoder.transformer
+            merge_config['model']['doc_encoder']['finetune'] = self.config.model.doc_encoder.finetune
+            self.config = merge_config
+        elif self.config.continue_training:
+            logger.debug(f"This is fine-tuning mode, but we continue from a recent checkpoint [{location}], we update the checkpoint['config'] with new config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps)")
+            # Mainly to keep the training info, like keep the original train step and update the max train step
+            new_config = self.config.copy()
+            self.config = checkpoint['config']
+            self.train_info = checkpoint["train_info"]
+            self.config.trainer.max_evals = new_config.trainer.max_evals
+            self.config.trainer.log_frequency = new_config.trainer.log_frequency
+            self.config.trainer.patience = new_config.trainer.patience
+            self.config.trainer.eval_per_k_steps = new_config.trainer.eval_per_k_steps
+            self.config.trainer.num_training_steps = new_config.trainer.num_training_steps
+        else:
+            logger.debug(f"This is training mode, we replace self.config with checkpoint['config']")
+            self.config = checkpoint['config']
+            self.train_info = checkpoint["train_info"]
+            
+        logger.debug(f"New self.config:{self.config}")
+        
+        self.model.load_state_dict(checkpoint['model'], strict=False)
+        
+        # The pre-trained doc_encoder will be loaded at Step 1 - _build_model 
+        # Here's to replace the pre-trained encoder with fine-tuned encoder when we say to finetune the encoder in {config.model.doc_encoder.finetune}
         if self.config.model.doc_encoder.finetune:
             # Load the document encoder params if encoder is finetuned
+            logger.debug(f"Load the document encoder params as encoder is finetuned")
             doc_encoder_dir = path.join(
                 path.dirname(location), self.config.paths.doc_encoder_dirname
             )
@@ -720,6 +820,7 @@ class Experiment:
 
         if last_checkpoint:
             # If resuming training, restore the optimizer state as well
+            logger.debug(f"Restore the optimizer state (from last_checkpoint)")
             for param_group in checkpoint["optimizer"]:
                 self.optimizer[param_group].load_state_dict(
                     checkpoint["optimizer"][param_group]
@@ -743,7 +844,8 @@ class Experiment:
                         Whether the checkpoint is the last one saved or not.
                         If false, don't save optimizers and schedulers which take up a lot of space.
         """
-
+        logger.debug(f"Save model to {location}, last_checkpoint:[{last_checkpoint}]")
+        
         model_state_dict = OrderedDict(self.model.state_dict())
         doc_encoder_state_dict = {}
 
@@ -786,6 +888,7 @@ class Experiment:
             save_dict["scaler"] = self.scaler.state_dict()
 
         if last_checkpoint:
+            logger.debug(f"Save the optimizer and scheduler states")
             # For last checkpoint save the optimizer and scheduler states as well
             save_dict["optimizer"] = {}
             save_dict["scheduler"] = {}
