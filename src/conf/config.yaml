@@ -37,8 +37,8 @@ defaults:
   - trainer: train
   
   # arcca/mylinux, arcca_test/mylinux_test
-  - infra: ???
-  - experiment: ???
+  - infra: mylinux
+  - experiment: mylinux_test
 
 paths:
   resource_dir: ${infra.project_dir}/coref_resources
