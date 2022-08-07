@@ -6,19 +6,23 @@
 
 defaults:
   # litbank
-  - override /datasets: litbank
+  - override /datasets: i2b2
   - override /trainer: train.yaml
   # The pre-trained doc_encoder model is downloaded and cached locally
   - override /model/doc_encoder/transformer: longformer_joint_mylinux_local
 
+model:
+  doc_encoder:
+    finetune: false
+
 trainer:
-  log_frequency: 10
+  log_frequency: 8
   # Stop when no improvement in 10 evaluations 
   patience: 5
   # 13 hours
   max_evals: 20
-  # 3 steps(docs) / 1 min -> 180 steps / 1 hour
-  eval_per_k_steps: 400
+  # litbank: 3 steps(docs) / 1 min -> 180 steps / 1 hour
+  eval_per_k_steps: 296
   # num_training_steps = max_evals * eval_per_k_steps # We don't need to set this
 
 use_wandb: False

@@ -326,7 +326,7 @@ class Experiment:
         logger.debug(f"self.optim_scheduler:{self.optim_scheduler}")
 
         if self.config.model.doc_encoder.finetune:
-            logger.debug(f"doc_encoder.finetune is [{doc_encoder.finetune}], set up optimizer for document encoder")
+            logger.debug(f"doc_encoder.finetune is [{self.config.model.doc_encoder.finetune}], set up optimizer for document encoder")
             # Optimizer for document encoder
             no_decay = [
                 "bias",

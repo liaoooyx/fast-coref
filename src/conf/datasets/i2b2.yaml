@@ -1,0 +1,10 @@
+i2b2:
+  name: "i2b2"
+  cluster_threshold: 2  # Singletons are ignored for evaluation (also not annotated)
+  canonical_cluster_threshold: 2
+  cross_val_split: 0
+  targeted_eval: False # True when GAP only evaluates for pronoun-person name (NP) pairs
+  num_train_docs: 296
+  num_dev_docs: 84
+  num_test_docs: 44
+  has_conll: True

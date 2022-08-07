@@ -17,13 +17,13 @@ use_wandb: False
 # We will also set the /model/doc_encoder/transformer.yaml finetune:False, as we don't want to fine-tune the pre-trained encoder.
 override_encoder: True
 
-# USeful for testing models with different memory architecture than the one trained on
+# Useful for testing models with different memory architecture than the one trained on
 override_memory: False
 
 # Custom config
 # Copy the best model (pretrained model) from {pretrain_model_dir} to {best_model_dir} 
 # This config works only when {train: True} is set. See main.py -> def main_train(config) -> if config.copy_from_pretrained_model for details
-copy_from_pretrained_model: False
+copy_from_pretrained_model: True
 # Specify the {model_name}, and continue training the model.
 # If this set to True, then {copy_from_pretrained_model} will not work
 # We update the checkpoint['config'] with current config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps)
@@ -31,7 +31,7 @@ continue_training: False
 
 defaults:
   - _self_
-  - datasets: quizbowl
+  - datasets: i2b2
   - model: model
   - optimizer: adam
   - trainer: train
