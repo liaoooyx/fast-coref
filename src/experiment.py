@@ -798,9 +798,13 @@ class Experiment:
         if self.config.model.doc_encoder.finetune:
             # Load the document encoder params if encoder is finetuned
             logger.debug(f"Load the document encoder params as encoder is finetuned")
-            doc_encoder_dir = path.join(
-                path.dirname(location), self.config.paths.doc_encoder_dirname
-            )
+            # We use the downloaded, pre-trained doc encoder as override_encoder=true, continue_training=false
+            if self.config.override_encoder and not self.config.continue_training:
+                doc_encoder_dir = self.config.model.doc_encoder.transformer.model_str
+            else:
+                doc_encoder_dir = path.join(
+                    path.dirname(location), self.config.paths.doc_encoder_dirname
+                )
             logger.info(
                 "Loading document encoder from %s" % path.abspath(doc_encoder_dir)
             )

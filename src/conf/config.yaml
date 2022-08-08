@@ -14,7 +14,10 @@ use_wandb: False
 # Here we override the longformer_large encoder with longformer_ontonotes encoder uploaded on Huggingface
 
 # Set to True as we want to use the pre-trained encoder. 
-# We will also set the /model/doc_encoder/transformer.yaml finetune:False, as we don't want to fine-tune the pre-trained encoder.
+# We will also set the /model/doc_encoder/transformer.yaml finetune:False, if we don't want to fine-tune the pre-trained encoder.
+# If we want to fine-tune the pre-trained encoder, and the encoder is downloaded from huggingface, we set {continue_training} to false. 
+# So that it will load the pre-trained encoder from {model.doc_encoder.transformer.model_str}.
+# Otherwise, it will load the encoder from [checkpoint]/{doc_encoder_dirname}
 override_encoder: True
 
 # Useful for testing models with different memory architecture than the one trained on
@@ -26,7 +29,7 @@ override_memory: False
 copy_from_pretrained_model: True
 # Specify the {model_name}, and continue training the model.
 # If this set to True, then {copy_from_pretrained_model} will not work
-# We update the checkpoint['config'] with current config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps)
+# We update the checkpoint['config'] with current config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps).
 continue_training: False
 
 defaults:

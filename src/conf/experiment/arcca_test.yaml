@@ -5,16 +5,20 @@
 
 
 defaults:
-  - override /datasets: litbank
+  - override /datasets: i2b2
   - override /trainer: train.yaml
   # The pre-trained model is downloaded and cached locally
   - override /model/doc_encoder/transformer: longformer_joint_arcca_local
 
+model:
+  doc_encoder:
+    finetune: false
+    
 trainer:
-  log_frequency: 10
+  log_frequency: 37
   max_evals: 20
-  eval_per_k_steps: 400
-  patience: 5
+  eval_per_k_steps: 1000
+  patience: 10
 
 use_wandb: False
 

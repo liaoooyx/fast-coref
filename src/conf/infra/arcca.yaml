@@ -1,7 +1,8 @@
 is_local: False
 job_time: ???
 job_id: ???
-work_dir: "/scratch/c.c21051562/workspace/fast-coref"
+project_dir: /scratch/c.c21051562/workspace/fast-coref
+work_dir: ${project_dir}/src/
 
 
 #hydra:
