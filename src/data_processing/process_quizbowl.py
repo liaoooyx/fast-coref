@@ -86,6 +86,4 @@ def minimize_split(args, split="test"):
 
 
 if __name__ == "__main__":
-    print(parse_args())
-    raise Exception("Force stop")
     minimize_split(parse_args())

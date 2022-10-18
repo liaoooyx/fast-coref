@@ -26,7 +26,7 @@ override_memory: False
 # Custom config
 # Copy the best model (pretrained model) from {pretrain_model_dir} to {best_model_dir} 
 # This config works only when {train: True} is set. See main.py -> def main_train(config) -> if config.copy_from_pretrained_model for details
-copy_from_pretrained_model: True
+copy_from_pretrained_model: False
 # Specify the {model_name}, and continue training the model.
 # If this set to True, then {copy_from_pretrained_model} will not work
 # We update the checkpoint['config'] with current config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps).
@@ -34,14 +34,14 @@ continue_training: False
 
 defaults:
   - _self_
-  - datasets: i2b2
+  - datasets: for_exp_3_1
   - model: model
   - optimizer: adam
   - trainer: train
   
   # arcca/mylinux, arcca_test/mylinux_test
-  - infra: mylinux
-  - experiment: mylinux_test
+  - infra: arcca
+  - experiment: arcca_exp_3_1
 
 paths:
   resource_dir: ${infra.project_dir}/coref_resources
@@ -64,7 +64,7 @@ paths:
   
   # In [train] mode, it will get a new model name if {model_name} is null. We can assign the model name here to prevent auto create. 
   # In [eval] mode, it will be automatically identified according to the {model_dir}
-  model_name: null
+  model_name: joint_train_onto_i2b2
   
   # In [eval] mode, this is used to stript the prefix of model folder name in order to get the model name.
   model_name_prefix: 'coref_'
@@ -83,8 +83,8 @@ paths:
   
   doc_encoder_dirname: 'doc_encoder'
   
-  # This is a custom variable.
-  # As want fine-tune on a pretrained model, we will copy the model under this dir to {best_model_dir}.
+  # This is a newly added variable.
+  # In order to fine-tune on a pretrained model, we will copy the model under this dir to {best_model_dir}.
   # Then {best_model_path} is exist and hence the pretrained model will be loaded at the beginning of training prcess.
   # See experiment.py -> def _load_previous_checkpoint(self) for details.
   pretrain_model_dir: ${paths.base_model_dir}/joint_best

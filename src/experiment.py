@@ -375,7 +375,7 @@ class Experiment:
         This method implements the training loop.
         Within the training loop, the model is periodically evaluated on the dev set(s).
         """
-        logger.debug(f"Now in the method of training the model")
+        logger.debug("Now in the method of model training")
 
         model, optimizer, scheduler, scaler = (
             self.model,
