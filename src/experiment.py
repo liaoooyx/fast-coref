@@ -6,7 +6,7 @@ import torch
 import json
 import numpy as np
 import random
-# import wandb
+import wandb
 
 from omegaconf import OmegaConf
 from os import path
@@ -468,13 +468,13 @@ class Experiment:
                     sys.stdout.flush()
                     if torch.cuda.is_available():
                         torch.cuda.reset_peak_memory_stats()
-                    # if self.config.use_wandb:
-                    #     wandb.log(
-                    #         {
-                    #             "train/loss": loss,
-                    #             "batch": self.train_info["global_steps"],
-                    #         }
-                    #     )
+                    if self.config.use_wandb:
+                        wandb.log(
+                            {
+                                "train/loss": loss,
+                                "batch": self.train_info["global_steps"],
+                            }
+                        )
 
                 if train_config.eval_per_k_steps and (
                     self.train_info["global_steps"] % train_config.eval_per_k_steps == 0
@@ -513,8 +513,8 @@ class Experiment:
 
                         if rem_time < avg_eval_time:
                             logger.info("Canceling job as not much time left")
-                            # if self.config.use_wandb:
-                            #     wandb.mark_preempting()
+                            if self.config.use_wandb:
+                                wandb.mark_preempting()
                             sys.exit()
 
             # Check stopping criteria
@@ -526,21 +526,21 @@ class Experiment:
         for key in result_dict:
             # Log result for individual metrics
             if isinstance(result_dict[key], dict):
-                pass
-                # wandb.log(
-                #     {
-                #         f"{split}/{dataset}/{key}": result_dict[key].get("fscore", 0.0),
-                #         "batch": self.train_info["global_steps"],
-                #     }
-                # )
+                # pass
+                wandb.log(
+                    {
+                        f"{split}/{dataset}/{key}": result_dict[key].get("fscore", 0.0),
+                        "batch": self.train_info["global_steps"],
+                    }
+                )
 
         # Log the overall F-score
-        # wandb.log(
-        #     {
-        #         f"{split}/{dataset}/CoNLL": result_dict.get("fscore", 0.0),
-        #         "batch": self.train_info["global_steps"],
-        #     }
-        # )
+        wandb.log(
+            {
+                f"{split}/{dataset}/CoNLL": result_dict.get("fscore", 0.0),
+                "batch": self.train_info["global_steps"],
+            }
+        )
 
     @torch.no_grad()
     def periodic_model_eval(self) -> float:
@@ -563,8 +563,8 @@ class Experiment:
                 conll_data_dir=self.conll_data_dir,
             )
             fscore_dict[dataset] = result_dict.get("fscore", 0.0)
-            # if self.config.use_wandb:
-            #     self._wandb_log(result_dict, dataset=dataset, split="dev")
+            if self.config.use_wandb:
+                self._wandb_log(result_dict, dataset=dataset, split="dev")
 
         logger.info(fscore_dict)
         # Calculate Mean F-score
@@ -607,8 +607,8 @@ class Experiment:
         logger.info(
             "Max training memory: %.1f GB" % self.train_info.get("max_mem", 0.0)
         )
-        # if self.config.use_wandb:
-        #     wandb.log({"Max Training Memory": self.train_info.get("max_mem", 0.0)})
+        if self.config.use_wandb:
+            wandb.log({"Max Training Memory": self.train_info.get("max_mem", 0.0)})
 
         logger.info("Validation performance: %.1f" % self.train_info["val_perf"])
 
@@ -640,8 +640,8 @@ class Experiment:
                     final_eval=True,
                     conll_data_dir=self.conll_data_dir,
                 )
-                # if self.config.use_wandb:
-                #     self._wandb_log(result_dict, dataset=dataset, split=split)
+                if self.config.use_wandb:
+                    self._wandb_log(result_dict, dataset=dataset, split=split)
 
                 dataset_output_dict[dataset][split] = result_dict
                 perf_summary[split] = result_dict["fscore"]

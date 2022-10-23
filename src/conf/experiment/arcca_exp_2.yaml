@@ -5,19 +5,19 @@
 
 defaults:
   # litbank
-  - override /datasets: for_exp_3_1
+  - override /datasets: for_exp_2
   - override /trainer: train.yaml
   # The pre-trained doc_encoder model is downloaded and cached locally
   - override /model/doc_encoder/transformer: longformer_joint_arcca_local
 
 trainer:
-  log_frequency: 300
+  log_frequency: 600
   # Stop when no improvement in 10 evaluations 
   patience: 10
   # 13 hours
   max_evals: 20
   # litbank: 3 steps(docs) / 1 min -> 180 steps / 1 hour
-  eval_per_k_steps: 3098
+  eval_per_k_steps: 5000
   # num_training_steps = max_evals * eval_per_k_steps # We don't need to set this
 
 use_wandb: False
@@ -26,10 +26,9 @@ use_wandb: False
 # (a) The dev performance has not improved for the allowed patience parameter number of evaluations.
 # (b) Number of gradient updates is already >= Total training steps.
 
-
-# datasets:
-#   ontonotes:
-#     num_train_docs: 1000
+datasets:
+  ontonotes:
+    num_train_docs: 1000
 
 model:
   doc_encoder:

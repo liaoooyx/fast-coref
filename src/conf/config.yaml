@@ -5,7 +5,7 @@ seed: 45
 # When train:False is set, the program will go to [eval] mode. See main.py -> main_eval() for details.
 # When train:True is set, the program will go to [train] mode. See main.py -> main_train() for details.
 train: True
-use_wandb: False
+use_wandb: True
 
 # Override encoder can be used during evaluation to override the encoder used during training
 # Sample use:
@@ -34,14 +34,14 @@ continue_training: False
 
 defaults:
   - _self_
-  - datasets: for_exp_3_1
+  - datasets: i2b2
   - model: model
   - optimizer: adam
   - trainer: train
   
   # arcca/mylinux, arcca_test/mylinux_test
-  - infra: arcca
-  - experiment: arcca_exp_3_1
+  - infra: mylinux
+  - experiment: mylinux_test
 
 paths:
   resource_dir: ${infra.project_dir}/coref_resources
@@ -64,7 +64,7 @@ paths:
   
   # In [train] mode, it will get a new model name if {model_name} is null. We can assign the model name here to prevent auto create. 
   # In [eval] mode, it will be automatically identified according to the {model_dir}
-  model_name: joint_train_onto_i2b2
+  model_name: test_i2b2_wandb
   
   # In [eval] mode, this is used to stript the prefix of model folder name in order to get the model name.
   model_name_prefix: 'coref_'

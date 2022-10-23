@@ -1,0 +1,10 @@
+mimic_cxr:
+  name: "mimic_cxr"
+  cluster_threshold: 2  # Singletons are ignored for evaluation (also not annotated)
+  canonical_cluster_threshold: 2
+  targeted_eval: False
+  num_train_docs: 2395
+  num_dev_docs: 603
+  num_test_docs: 44
+  has_conll: True
+  singleton_file: null  # File path with pseudo-singletons
