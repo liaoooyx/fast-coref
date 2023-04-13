@@ -22,15 +22,28 @@ def load_dataset(
     num_test_docs: int = None,
 ) -> Dict:
     all_splits = []
+    using_train_dev_file = False
     for split in ["train", "dev", "test"]:
-        jsonl_file = get_data_file(data_dir, split, max_segment_len)
-        if jsonl_file is None:
-            raise ValueError(f"No relevant files at {data_dir}")
-        split_data = []
-        with open(jsonl_file) as f:
-            for line in f:
-                split_data.append(json.loads(line.strip()))
-        all_splits.append(split_data)
+        try:
+            jsonl_file = get_data_file(data_dir, split, max_segment_len)
+            if jsonl_file is None:
+                raise ValueError(f"No relevant files at {data_dir}")
+            split_data = []
+            with open(jsonl_file) as f:
+                for line in f:
+                    split_data.append(json.loads(line.strip()))
+            all_splits.append(split_data)
+        except ValueError:
+            # To make it easier to test the effects of the number of train/dev docs.
+            using_train_dev_file = True
+            jsonl_file = get_data_file(data_dir, "train_dev", max_segment_len)
+            if jsonl_file is None:
+                raise ValueError(f"No relevant files at {data_dir}")
+            split_data = []
+            with open(jsonl_file) as f:
+                for line in f:
+                    split_data.append(json.loads(line.strip()))
+            all_splits.append(split_data)
 
     train_data, dev_data, test_data = all_splits
 
@@ -47,11 +60,18 @@ def load_dataset(
 
         print("Added %d singletons" % num_singletons)
 
-    return {
-        "train": train_data[:num_train_docs],
-        "dev": dev_data[:num_dev_docs],
-        "test": test_data[:num_test_docs],
-    }
+    if using_train_dev_file:
+        return {
+            "train": train_data[:num_train_docs],
+            "dev": dev_data[-1*num_dev_docs:],
+            "test": test_data[:num_test_docs],
+        }
+    else:
+        return {
+            "train": train_data[:num_train_docs],
+            "dev": dev_data[:num_dev_docs],
+            "test": test_data[:num_test_docs],
+        }
 
 
 def load_eval_dataset(data_dir: str, max_segment_len: int) -> Dict:

@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override /datasets: mimic_manual_100
+  - override /trainer: train.yaml
+  - override /model/doc_encoder/transformer: longformer_joint_mylinux_local
+
+
+trainer:
+  log_frequency: 50
+  patience: 10
+  max_evals: 100
+  eval_per_k_steps: 145

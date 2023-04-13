@@ -1,5 +1,5 @@
-mimic_cxr:
-  name: "mimic_cxr"
+mimic_cxr_2k:
+  name: "mimic_cxr_2k"
   cluster_threshold: 2  # Singletons are ignored for evaluation (also not annotated)
   canonical_cluster_threshold: 2
   targeted_eval: False

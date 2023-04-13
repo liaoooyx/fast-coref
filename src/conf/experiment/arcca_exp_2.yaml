@@ -5,13 +5,13 @@
 
 defaults:
   # litbank
-  - override /datasets: for_exp_2
+  - override /datasets: joint_onto_i2b2_mimic
   - override /trainer: train.yaml
   # The pre-trained doc_encoder model is downloaded and cached locally
   - override /model/doc_encoder/transformer: longformer_joint_arcca_local
 
 trainer:
-  log_frequency: 600
+  log_frequency: 1000
   # Stop when no improvement in 10 evaluations 
   patience: 10
   # 13 hours

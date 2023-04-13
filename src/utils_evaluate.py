@@ -73,6 +73,9 @@ def full_coref_evaluation(
 
         logger.info(f"Evaluating on {len(data_iter_map[split][dataset])} examples")
         for example in data_iter_map[split][dataset]:
+            if example["doc_key"] != "s51246808_impression_0":
+                continue
+
             start_time = time.time()
             pred_mentions, mention_scores, gt_actions, pred_actions = model(example)
 
