@@ -1,9 +1,9 @@
 # @package _global_
 
 defaults:
-  - override /datasets: mimic_manual_100
+  - override /datasets: mimic_manual_200
   - override /trainer: train.yaml
-  - override /model/doc_encoder/transformer: longformer_joint_mylinux_local
+  - override /model/doc_encoder/transformer: longformer_joint_arcca_local
 
 
 trainer:

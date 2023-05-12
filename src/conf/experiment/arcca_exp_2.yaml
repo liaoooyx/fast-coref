@@ -5,7 +5,7 @@
 
 defaults:
   # litbank
-  - override /datasets: joint_onto_i2b2_mimic
+  - override /datasets: joint_exp_2
   - override /trainer: train.yaml
   # The pre-trained doc_encoder model is downloaded and cached locally
   - override /model/doc_encoder/transformer: longformer_joint_arcca_local
@@ -29,6 +29,8 @@ use_wandb: False
 datasets:
   ontonotes:
     num_train_docs: 1000
+#   mimic_cxr_4k:
+#     num_train_docs: 1000
 
 model:
   doc_encoder:

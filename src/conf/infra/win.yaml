@@ -1,0 +1,9 @@
+is_local: True
+project_dir: E:\myproject\vscode_workspace\fast-coref
+work_dir: ${project_dir}\src\
+
+
+#hydra:
+#  run:
+#    dir:
+#      /share/data/speech/shtoshni/research/fast-coref/slurm_scripts/thesis/${job_id}.log

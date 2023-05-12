@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "E:\\myproject\\vscode_workspace\\fast-coref\\src"
+    ],
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "E:\\myproject\\vscode_workspace\\fast-coref\\src"
+    }
+}

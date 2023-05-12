@@ -6,7 +6,7 @@ import torch
 import json
 import numpy as np
 import random
-import wandb
+# import wandb
 
 from omegaconf import OmegaConf
 from os import path
@@ -49,7 +49,7 @@ class Experiment:
         # Initialize model path attributes
         self.model_path = self.config.paths.model_path
         self.best_model_path = self.config.paths.best_model_path
-
+        
         if not self.eval_model:
             logger.debug(f"Initial for training")
             # Step 1 - Initialize model
@@ -86,7 +86,7 @@ class Experiment:
         logger.debug(f"Step 1 - Initialize the EntityRankingModel")
         logger.debug(f"model_params:{self.config.model}")
         logger.debug(f"train_config:{self.config.trainer}")
-
+        
         model_params: DictConfig = self.config.model
         train_config: DictConfig = self.config.trainer
 
@@ -305,7 +305,7 @@ class Experiment:
             self.scaler = None
 
         logger.debug(f"self.scaler:{self.scaler}")
-
+        
         # Optimizer for clustering params
         self.optimizer["mem"] = torch.optim.Adam(
             self.model.get_params()[1], lr=optimizer_config.init_lr, eps=1e-6
@@ -468,13 +468,13 @@ class Experiment:
                     sys.stdout.flush()
                     if torch.cuda.is_available():
                         torch.cuda.reset_peak_memory_stats()
-                    if self.config.use_wandb:
-                        wandb.log(
-                            {
-                                "train/loss": loss,
-                                "batch": self.train_info["global_steps"],
-                            }
-                        )
+                    # if self.config.use_wandb:
+                    #     wandb.log(
+                    #         {
+                    #             "train/loss": loss,
+                    #             "batch": self.train_info["global_steps"],
+                    #         }
+                    #     )
 
                 if train_config.eval_per_k_steps and (
                     self.train_info["global_steps"] % train_config.eval_per_k_steps == 0
@@ -513,8 +513,8 @@ class Experiment:
 
                         if rem_time < avg_eval_time:
                             logger.info("Canceling job as not much time left")
-                            if self.config.use_wandb:
-                                wandb.mark_preempting()
+                            # if self.config.use_wandb:
+                            #     wandb.mark_preempting()
                             sys.exit()
 
             # Check stopping criteria
@@ -526,21 +526,21 @@ class Experiment:
         for key in result_dict:
             # Log result for individual metrics
             if isinstance(result_dict[key], dict):
-                # pass
-                wandb.log(
-                    {
-                        f"{split}/{dataset}/{key}": result_dict[key].get("fscore", 0.0),
-                        "batch": self.train_info["global_steps"],
-                    }
-                )
+                pass
+                # wandb.log(
+                #     {
+                #         f"{split}/{dataset}/{key}": result_dict[key].get("fscore", 0.0),
+                #         "batch": self.train_info["global_steps"],
+                #     }
+                # )
 
         # Log the overall F-score
-        wandb.log(
-            {
-                f"{split}/{dataset}/CoNLL": result_dict.get("fscore", 0.0),
-                "batch": self.train_info["global_steps"],
-            }
-        )
+        # wandb.log(
+        #     {
+        #         f"{split}/{dataset}/CoNLL": result_dict.get("fscore", 0.0),
+        #         "batch": self.train_info["global_steps"],
+        #     }
+        # )
 
     @torch.no_grad()
     def periodic_model_eval(self) -> float:
@@ -563,8 +563,8 @@ class Experiment:
                 conll_data_dir=self.conll_data_dir,
             )
             fscore_dict[dataset] = result_dict.get("fscore", 0.0)
-            if self.config.use_wandb:
-                self._wandb_log(result_dict, dataset=dataset, split="dev")
+            # if self.config.use_wandb:
+            #     self._wandb_log(result_dict, dataset=dataset, split="dev")
 
         logger.info(fscore_dict)
         # Calculate Mean F-score
@@ -597,7 +597,7 @@ class Experiment:
     def perform_final_eval(self) -> None:
         """Method to evaluate the model after training has finished."""
         logger.debug(f"Step 3 - Perform evaluation")
-
+        
         self.model.eval()
         base_output_dict = OmegaConf.to_container(self.config)
         perf_summary = {"best_perf": self.train_info["val_perf"]}
@@ -607,8 +607,8 @@ class Experiment:
         logger.info(
             "Max training memory: %.1f GB" % self.train_info.get("max_mem", 0.0)
         )
-        if self.config.use_wandb:
-            wandb.log({"Max Training Memory": self.train_info.get("max_mem", 0.0)})
+        # if self.config.use_wandb:
+        #     wandb.log({"Max Training Memory": self.train_info.get("max_mem", 0.0)})
 
         logger.info("Validation performance: %.1f" % self.train_info["val_perf"])
 
@@ -620,8 +620,6 @@ class Experiment:
             logger.info("%s" % split.capitalize())
 
             for dataset in self.data_iter_map.get(split, []):
-                if split != "test" or "s51246808_impression_0" not in [i["doc_key"] for i in self.data_iter_map[split][dataset]]:
-                    continue
                 dataset_dir = path.join(self.config.paths.model_dir, dataset)
                 if not path.exists(dataset_dir):
                     os.makedirs(dataset_dir)
@@ -642,8 +640,8 @@ class Experiment:
                     final_eval=True,
                     conll_data_dir=self.conll_data_dir,
                 )
-                if self.config.use_wandb:
-                    self._wandb_log(result_dict, dataset=dataset, split=split)
+                # if self.config.use_wandb:
+                #     self._wandb_log(result_dict, dataset=dataset, split=split)
 
                 dataset_output_dict[dataset][split] = result_dict
                 perf_summary[split] = result_dict["fscore"]
@@ -670,7 +668,7 @@ class Experiment:
             summary_file = path.join(
                 perf_dir, str(self.config.infra.job_id) + gold_ment_str + ".json"
             )
-
+            
         json.dump(perf_summary, open(summary_file, "w"), indent=2)
         logger.info("Performance summary file: %s" % path.abspath(summary_file))
 
@@ -678,15 +676,15 @@ class Experiment:
         logger.debug(f"Step 1 - Initialize best model for evaluation")
         logger.debug(f"Load checkpoint from best_model_path:{self.best_model_path}")
         logger.debug(f"Original self.config:{self.config}")
-
+        
         # Save for later reuse
         local_config = self.config.copy()
-
+        
         checkpoint = torch.load(self.best_model_path, map_location="cpu")
         # Load config from checkpoint model
         config = checkpoint["config"]
         logger.debug(f'config=checkpoint["config"]:{config}')
-
+        
         # Copying the saved model config to current config is very important to avoid any issues while
         # loading the saved model. To give an example, model might be saved with the speaker tags
         # (training: experiment=ontonotes_speaker)
@@ -710,10 +708,11 @@ class Experiment:
         # Overwrite self.config to checkpoint config
         # From [joint_best/]: 'model': {'doc_encoder': {'transformer': {'name': 'longformer', 'model_size': 'large', 'model_str': 'allenai/longformer-large-4096', 'max_encoder_segment_len': 4096, 'max_segment_len': 4096}, 'chunking': 'independent', 'finetune': True, 'add_speaker_tokens': True, 'speaker_start': '[SPEAKER_START]', 'speaker_end': '[SPEAKER_END]'}, 'memory': {'mem_type': {'name': 'unbounded', 'max_ents': None, 'eval_max_ents': None}, 'emb_size': 20, 'mlp_size': 3000, 'mlp_depth': 1, 'sim_func': 'hadamard', 'entity_rep': 'wt_avg', 'num_feats': 2}, 'mention_params': {'max_span_width': 20, 'ment_emb': 'attn', 'use_gold_ments': False, 'use_topk': False, 'top_span_ratio': 0.4, 'emb_size': 20, 'mlp_size': 3000, 'mlp_depth': 1, 'ment_emb_to_size_factor': {'attn': 3, 'endpoint': 2, 'max': 1}}, 'metadata_params': {'use_genre_feature': False, 'default_genre': 'nw', 'genres': ['bc', 'bn', 'mz', 'nw', 'pt', 'tc', 'wb']}},
         self.config.model = config.model
-
+        
         # Example: 'train_info': {'val_perf': 72.4, 'global_steps': 60, 'num_stuck_evals': 0, 'peak_memory': 0.0, 'max_mem': 0.0}
         self.train_info = checkpoint["train_info"]
         logger.debug(f"train_info:{self.train_info}")
+        
 
         # If {model.doc_encoder.finetune} in checkpoint is true, (which will also assume that the training stage has fine-tuned and saved the doc_encoder)
         # it will load the doc_encoder from {paths.best_model_dir}/{paths.doc_encoder_dirname}, if this path exist.
@@ -759,9 +758,9 @@ class Experiment:
 
         checkpoint = torch.load(location, map_location="cpu")
         logger.info("Loading model from %s" % path.abspath(location))
-
+        
         # In our new added fine-tuning mode,
-        # it is dangerous to load all the checkpoint["config"] (from the pre-trained model) to self.config,
+        # it is dangerous to load all the checkpoint["config"] (from the pre-trained model) to self.config, 
         # Because the pretrained model was trained in a different environment and their configs could be different.
         # Therefore, when in the fine-tuning mode, we only overwrite part of the configs that are necessary.
         # And don't load the train_info, in the fine-tuning mode.
@@ -775,8 +774,7 @@ class Experiment:
             merge_config['model']['doc_encoder']['finetune'] = self.config.model.doc_encoder.finetune
             self.config = merge_config
         elif self.config.continue_training:
-            logger.debug(
-                f"This is fine-tuning mode, but we continue from a recent checkpoint [{location}], we update the checkpoint['config'] with new config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps)")
+            logger.debug(f"This is fine-tuning mode, but we continue from a recent checkpoint [{location}], we update the checkpoint['config'] with new config (trainer.max_evals, patience, eval_per_k_steps, num_training_steps)")
             # Mainly to keep the training info, like keep the original train step and update the max train step
             new_config = self.config.copy()
             self.config = checkpoint['config']
@@ -790,12 +788,12 @@ class Experiment:
             logger.debug(f"This is training mode, we replace self.config with checkpoint['config']")
             self.config = checkpoint['config']
             self.train_info = checkpoint["train_info"]
-
+            
         logger.debug(f"New self.config:{self.config}")
-
+        
         self.model.load_state_dict(checkpoint['model'], strict=False)
-
-        # The pre-trained doc_encoder will be loaded at Step 1 - _build_model
+        
+        # The pre-trained doc_encoder will be loaded at Step 1 - _build_model 
         # Here's to replace the pre-trained encoder with fine-tuned encoder when we say to finetune the encoder in {config.model.doc_encoder.finetune}
         if self.config.model.doc_encoder.finetune:
             # Load the document encoder params if encoder is finetuned
@@ -851,7 +849,7 @@ class Experiment:
                         If false, don't save optimizers and schedulers which take up a lot of space.
         """
         logger.debug(f"Save model to {location}, last_checkpoint:[{last_checkpoint}]")
-
+        
         model_state_dict = OrderedDict(self.model.state_dict())
         doc_encoder_state_dict = {}
 

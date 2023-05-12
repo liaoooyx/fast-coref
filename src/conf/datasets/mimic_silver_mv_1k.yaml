@@ -1,0 +1,10 @@
+mimic_silver_mv1_1k:
+  name: "mimic_silver_mv1_1k"
+  cluster_threshold: 2  # Singletons are ignored for evaluation (also not annotated)
+  canonical_cluster_threshold: 2
+  targeted_eval: False
+  num_train_docs: 1000
+  num_dev_docs: 344
+  num_test_docs: 348
+  has_conll: True
+  singleton_file: null  # File path with pseudo-singletons

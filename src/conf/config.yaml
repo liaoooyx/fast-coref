@@ -4,11 +4,11 @@ seed: 45
 # Set to True as we want to fine-tune the model (except for the encoder) on a custom dataset
 # When train:False is set, the program will go to [eval] mode. See main.py -> main_eval() for details.
 # When train:True is set, the program will go to [train] mode. See main.py -> main_train() for details.
-train: False
+train: True
 use_wandb: False
 
-# Override encoder can be used during evaluation to override the encoder used during training
-# Sample use:
+# The override_encoder can be used during evaluation to override the encoder used during training
+# Example usage:
 # python main.py experiment=eval_all paths.model_dir=../models/ontonotes_best/
 #  model/doc_encoder/transformer=longformer_ontonotes override_encoder=True
 # Here we override the longformer_large encoder with longformer_ontonotes encoder uploaded on Huggingface
@@ -34,14 +34,13 @@ continue_training: False
 
 defaults:
   - _self_
-  - datasets: i2b2
+  - datasets: joint_onto_i2b2_mimic
   - model: model
   - optimizer: adam
   - trainer: train
   
-  # arcca/mylinux, arcca_test/mylinux_test
-  - infra: mylinux
-  - experiment: arcca_exp_46
+  - infra: arcca
+  - experiment: arcca_exp_2
 
 paths:
   resource_dir: ${infra.project_dir}/coref_resources
@@ -52,7 +51,7 @@ paths:
   # In [train] mode, {model_dir} will be set to {base_model_dir}/{model_name_prefix}+{model_name}, even if we assign a value here.
   # And the {model_dir} folder will be created if not exist.
   # In [eval] mode, {model_dir} is required. E.g. python main.py experiment=ontonotes_pseudo paths.model_dir=../models/joint_best/ train=False
-  model_dir: ../models/coref_model_401
+  model_dir: null
   
   # In [train] mode, this will be set to {model_dir}/best, even if we assign a value here.
   # And the {best_model_dir} folder will be created if not exist.
@@ -64,7 +63,7 @@ paths:
   
   # In [train] mode, it will get a new model name if {model_name} is null. We can assign the model name here to prevent auto create. 
   # In [eval] mode, it will be automatically identified according to the {model_dir}
-  model_name: testwandb
+  model_name: ???
   
   # In [eval] mode, this is used to stript the prefix of model folder name in order to get the model name.
   model_name_prefix: 'coref_'
@@ -77,7 +76,7 @@ paths:
   # In [train] mode, it will be set to {best_model_dir}/{model_filename}.
   # However, if {model_path} has value and {best_model_dir} is null, its value will become the same as {model_path}
   # In [eval] mode, this will be set to {best_model_dir}/{model_filename} like:
-  # ./fast-coref/models/coref_model_xxx/best/model.pth, or
+  # ./fast-coref/models/coref_litbank_cv_0_fb7c919da4efcfe7579bbdbda9822e4e/best/model.pth, or
   # ./fast-coref/models/joint_best/model.pth. It depends on whether the {model_dir} has a subfolder call /best
   best_model_path: null
   
