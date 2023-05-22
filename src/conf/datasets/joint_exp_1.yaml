@@ -1,0 +1,3 @@
+defaults:
+  - ontonotes
+  - mimic_silver_1k

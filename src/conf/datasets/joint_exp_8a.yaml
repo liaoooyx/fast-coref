@@ -1,4 +1,4 @@
 defaults:
   - ontonotes
   - i2b2
-  - mimic_cxr
+  - mimic_silver_ensemble_1k

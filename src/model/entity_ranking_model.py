@@ -1,18 +1,17 @@
+import logging
+import random
+from typing import Dict, List, Tuple
+
 import torch
 import torch.nn as nn
-
-from model.mention_proposal import MentionProposalModule
-from model.utils import get_gt_actions
-from model.memory.entity_memory import EntityMemory
-from model.memory.entity_memory_bounded import EntityMemoryBounded
-
-from typing import Dict, List, Tuple
 from omegaconf import DictConfig
 from torch import Tensor
 from transformers import PreTrainedTokenizerFast
 
-import logging
-import random
+from model.memory.entity_memory import EntityMemory
+from model.memory.entity_memory_bounded import EntityMemoryBounded
+from model.mention_proposal import MentionProposalModule
+from model.utils import get_gt_actions
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger()
@@ -45,9 +44,7 @@ class EntityRankingModel(nn.Module):
         self.drop_module = nn.Dropout(p=train_config.dropout_rate)
 
         # Document encoder + Mention proposer
-        self.mention_proposer = MentionProposalModule(
-            self.config, train_config, drop_module=self.drop_module
-        )
+        self.mention_proposer = MentionProposalModule(self.config, train_config, drop_module=self.drop_module)
 
         # Clustering module
         span_emb_size: int = self.mention_proposer.span_emb_size
@@ -70,9 +67,7 @@ class EntityRankingModel(nn.Module):
                 drop_module=self.drop_module,
             )
 
-        self.loss_fn = nn.CrossEntropyLoss(
-            label_smoothing=self.train_config.label_smoothing_wt
-        )
+        self.loss_fn = nn.CrossEntropyLoss(label_smoothing=self.train_config.label_smoothing_wt)
 
         if self.config.metadata_params.use_genre_feature:
             self.genre_embeddings = nn.Embedding(
@@ -111,21 +106,13 @@ class EntityRankingModel(nn.Module):
             if doc_class in meta_params.genres:
                 doc_class_idx = meta_params.genres.index(doc_class)
             else:
-                doc_class_idx = meta_params.genres.index(
-                    meta_params.default_genre
-                )  # Default genre
+                doc_class_idx = meta_params.genres.index(meta_params.default_genre)  # Default genre
 
-            return {
-                "genre": self.genre_embeddings(
-                    torch.tensor(doc_class_idx, device=self.device)
-                )
-            }
+            return {"genre": self.genre_embeddings(torch.tensor(doc_class_idx, device=self.device))}
         else:
             return {}
 
-    def calculate_new_ignore_loss(
-        self, new_ignore_list: List, action_tuple_list: List[Tuple[int, str]]
-    ) -> Tensor:
+    def calculate_new_ignore_loss(self, new_ignore_list: List, action_tuple_list: List[Tuple[int, str]]) -> Tensor:
         ent_counter = 0
         max_ents = self.config.memory.mem_type.max_ents
 
@@ -154,15 +141,11 @@ class EntityRankingModel(nn.Module):
                     # Reached memory capacity
                     index = ent_counter - max_ents - 1
                     target = torch.tensor([gt_idx], device=self.device)
-                    ignore_loss += self.loss_fn(
-                        torch.unsqueeze(new_ignore_list[index], dim=0), target
-                    )
+                    ignore_loss += self.loss_fn(torch.unsqueeze(new_ignore_list[index], dim=0), target)
 
         return ignore_loss
 
-    def calculate_coref_loss(
-        self, action_prob_list: List, action_tuple_list: List[Tuple[int, str]]
-    ) -> Tensor:
+    def calculate_coref_loss(self, action_prob_list: List, action_tuple_list: List[Tuple[int, str]]) -> Tensor:
         """Calculates the coreference loss for the autoregressive online clustering module.
 
         Args:
@@ -201,17 +184,13 @@ class EntityRankingModel(nn.Module):
                 continue
 
             target = torch.tensor([gt_idx], device=self.device)
-            coref_loss += self.loss_fn(
-                torch.unsqueeze(action_prob_list[counter], dim=0), target
-            )
+            coref_loss += self.loss_fn(torch.unsqueeze(action_prob_list[counter], dim=0), target)
             counter += 1
 
         return coref_loss
 
     @staticmethod
-    def get_filtered_clusters(
-        clusters, init_token_offset, final_token_offset, with_offset=True
-    ):
+    def get_filtered_clusters(clusters, init_token_offset, final_token_offset, with_offset=True):
         """Filter clusters from a document given the token offsets."""
         filt_clusters = []
         for orig_cluster in clusters:
@@ -256,9 +235,7 @@ class EntityRankingModel(nn.Module):
 
         # Initialize lists to track all the mentions predicted across the chunks
         pred_mentions_list, mention_emb_list = [], []
-        init_token_offset = sum(
-            [len(document["sentences"][idx]) for idx in range(0, seg_range[0])]
-        )
+        init_token_offset = sum([len(document["sentences"][idx]) for idx in range(0, seg_range[0])])
         token_offset = init_token_offset
 
         # logger.info(f"Token offset: {token_offset}, # of sentences: {num_segments}")
@@ -277,12 +254,8 @@ class EntityRankingModel(nn.Module):
 
             cur_doc_slice = {
                 "tensorized_sent": document["tensorized_sent"][idx],
-                "sentence_map": document["sentence_map"][
-                    token_offset : token_offset + num_tokens
-                ],
-                "subtoken_map": document["subtoken_map"][
-                    token_offset : token_offset + num_tokens
-                ],
+                "sentence_map": document["sentence_map"][token_offset : token_offset + num_tokens],
+                "subtoken_map": document["subtoken_map"][token_offset : token_offset + num_tokens],
                 "sent_len_list": [document["sent_len_list"][idx]],
                 "clusters": self.get_filtered_clusters(
                     document["clusters"],
@@ -315,9 +288,7 @@ class EntityRankingModel(nn.Module):
         # Step 2: Perform clustering
         # Get clusters part of the truncated document
         truncated_document_clusters = {
-            "clusters": self.get_filtered_clusters(
-                document["clusters"], init_token_offset, token_offset
-            )
+            "clusters": self.get_filtered_clusters(document["clusters"], init_token_offset, token_offset)
         }
         # Get ground truth clustering mentions
         gt_actions: List[Tuple[int, str]] = get_gt_actions(
@@ -327,18 +298,14 @@ class EntityRankingModel(nn.Module):
         pred_mentions = torch.tensor(pred_mentions_list, device=self.device)
 
         if self.mem_type == "unbounded":
-            coref_new_list = self.memory_net.forward_training(
-                pred_mentions, mention_emb_list, gt_actions, metadata
-            )
+            coref_new_list = self.memory_net.forward_training(pred_mentions, mention_emb_list, gt_actions, metadata)
         else:
             coref_new_list, new_ignore_list = self.memory_net.forward_training(
                 pred_mentions, mention_emb_list, gt_actions, metadata
             )
 
             if len(new_ignore_list):
-                ignore_loss = self.calculate_new_ignore_loss(
-                    new_ignore_list, gt_actions
-                )
+                ignore_loss = self.calculate_new_ignore_loss(new_ignore_list, gt_actions)
 
         # Consolidate different losses in one dictionary
         if ment_loss is not None:
@@ -355,7 +322,7 @@ class EntityRankingModel(nn.Module):
                 loss_dict["total"] = loss_dict["total"] + ignore_loss
         return loss_dict
 
-    def forward(self, document: Dict) -> Tuple[List, List, List, List]:
+    def forward(self, document: Dict, extra_output: Dict = None) -> Tuple[List, List, List, List]:
         """Forward pass of the streaming coreference model.
 
         This method performs streaming coreference. The entity clusters from previous
@@ -364,13 +331,15 @@ class EntityRankingModel(nn.Module):
 
         Args:
                 document (Dict): Tensorized document
+                extra_output (Dict): Newly added for active learning. Get necessary information
+                    for computing entropy.
 
         Returns:
-                 pred_mentions_list (List): Mentions predicted by the mention proposal module
-                 mention_scores (List): Scores assigned by the mention proposal module for
-                      the predicted mentions
-                 gt_actions (List): Ground truth clustering actions; useful for calculating oracle performance
-                 action_list (List): Actions predicted by the clustering module for the predicted mentions
+                pred_mentions_list (List): Mentions predicted by the mention proposal module
+                mention_scores (List): Scores assigned by the mention proposal module for
+                    the predicted mentions
+                gt_actions (List): Ground truth clustering actions; useful for calculating oracle performance
+                action_list (List): Actions predicted by the clustering module for the predicted mentions
         '"""
 
         # Initialize lists to track all the actions taken, mentions predicted across the chunks
@@ -385,12 +354,8 @@ class EntityRankingModel(nn.Module):
 
             cur_example = {
                 "tensorized_sent": document["tensorized_sent"][idx],
-                "sentence_map": document["sentence_map"][
-                    token_offset : token_offset + num_tokens
-                ],
-                "subtoken_map": document["subtoken_map"][
-                    token_offset : token_offset + num_tokens
-                ],
+                "sentence_map": document["sentence_map"][token_offset : token_offset + num_tokens],
+                "subtoken_map": document["subtoken_map"][token_offset : token_offset + num_tokens],
                 "sent_len_list": [document["sent_len_list"][idx]],
             }
 
@@ -403,6 +368,9 @@ class EntityRankingModel(nn.Module):
             if proposer_output_dict.get("ments", None) is None:
                 token_offset += num_tokens
                 continue
+
+            if extra_output is not None:
+                extra_output["mention_logits"] = proposer_output_dict.get("mention_logits", None)
 
             # Add the document offset to mentions predicted for the current chunk
             # It's important to add the offset before clustering because features like

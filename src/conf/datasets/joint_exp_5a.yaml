@@ -1,4 +1,4 @@
 defaults:
   - ontonotes
   - i2b2
-  - mimic_manual_500
+  - mimic_manual_with0coref_300

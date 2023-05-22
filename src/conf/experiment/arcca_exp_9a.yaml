@@ -1,0 +1,26 @@
+# @package _global_
+
+defaults:
+  - override /datasets: mimic_manual_with0coref_500_unsplit
+  - override /trainer: train.yaml
+  - override /model/doc_encoder/transformer: longformer_joint_arcca_local
+
+
+trainer:
+  log_frequency: 50
+  patience: 10
+  max_evals: 100
+  # Max = 465
+  eval_per_k_steps: 400
+  
+  
+datasets:
+  mimic_manual_with0coref_500_unsplit:
+    num_train_docs: 400
+    num_dev_docs: 1
+
+
+model:
+  doc_encoder:
+    add_speaker_tokens: True
+    finetune: False

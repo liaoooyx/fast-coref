@@ -1,10 +1,12 @@
-import torch
 from os import path
-from model.utils import action_sequences_to_clusters
-from model.entity_ranking_model import EntityRankingModel
-from inference.tokenize_doc import tokenize_and_segment_doc, basic_tokenize_doc
+
+import torch
 from omegaconf import OmegaConf
 from transformers import AutoModel, AutoTokenizer
+
+from inference.tokenize_doc import basic_tokenize_doc, tokenize_and_segment_doc
+from model.entity_ranking_model import EntityRankingModel
+from model.utils import action_sequences_to_clusters
 
 
 class Inference:
@@ -12,9 +14,7 @@ class Inference:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Load model
-        checkpoint = torch.load(
-            path.join(model_path, "model.pth"), map_location=self.device
-        )
+        checkpoint = torch.load(path.join(model_path, "model.pth"), map_location=self.device)
         self.config = OmegaConf.create(checkpoint["config"])
         if encoder_name is not None:
             self.config.model.doc_encoder.transformer.model_str = encoder_name
@@ -30,21 +30,15 @@ class Inference:
         if self.config.model.doc_encoder.finetune:
             # Load the document encoder params if encoder is finetuned
             if encoder_name is None:
-                doc_encoder_dir = path.join(
-                    model_path, self.config.paths.doc_encoder_dirname
-                )
+                doc_encoder_dir = path.join(model_path, self.config.paths.doc_encoder_dirname)
                 # else:
                 # 	doc_encoder_dir = encoder_name
                 # Load the encoder
-                self.model.mention_proposer.doc_encoder.lm_encoder = (
-                    AutoModel.from_pretrained(
-                        pretrained_model_name_or_path=doc_encoder_dir
-                    )
+                self.model.mention_proposer.doc_encoder.lm_encoder = AutoModel.from_pretrained(
+                    pretrained_model_name_or_path=doc_encoder_dir
                 )
-                self.model.mention_proposer.doc_encoder.tokenizer = (
-                    AutoTokenizer.from_pretrained(
-                        pretrained_model_name_or_path=doc_encoder_dir
-                    )
+                self.model.mention_proposer.doc_encoder.tokenizer = AutoTokenizer.from_pretrained(
+                    pretrained_model_name_or_path=doc_encoder_dir
                 )
 
             if torch.cuda.is_available():
@@ -56,9 +50,7 @@ class Inference:
     def perform_coreference(self, document):
         if isinstance(document, list):
             # Document is already tokenized
-            tokenized_doc = tokenize_and_segment_doc(
-                document, self.tokenizer, max_segment_len=self.max_segment_len
-            )
+            tokenized_doc = tokenize_and_segment_doc(document, self.tokenizer, max_segment_len=self.max_segment_len)
         elif isinstance(document, str):
             # Raw document string. First perform basic tokenization before further tokenization.
             import spacy
@@ -75,7 +67,8 @@ class Inference:
         else:
             raise ValueError
 
-        pred_mentions, _, _, pred_actions = self.model(tokenized_doc)
+        extra_output_dict = {}
+        pred_mentions, _, _, pred_actions = self.model(tokenized_doc, extra_output=extra_output_dict)
         idx_clusters = action_sequences_to_clusters(pred_actions, pred_mentions)
 
         subtoken_map = tokenized_doc["subtoken_map"]
@@ -83,15 +76,11 @@ class Inference:
         clusters = []
         for idx_cluster in idx_clusters:
             cur_cluster = []
-            for (ment_start, ment_end) in idx_cluster:
+            for ment_start, ment_end in idx_cluster:
                 cur_cluster.append(
                     (
                         (ment_start, ment_end),
-                        " ".join(
-                            orig_tokens[
-                                subtoken_map[ment_start] : subtoken_map[ment_end] + 1
-                            ]
-                        ),
+                        " ".join(orig_tokens[subtoken_map[ment_start] : subtoken_map[ment_end] + 1]),
                     )
                 )
 
@@ -107,7 +96,7 @@ class Inference:
 
 
 if __name__ == "__main__":
-    model_str = "/home/shtoshni/Research/fast-coref/models/ontonotes_best"
+    model_str = "/home/yuxiangliao/PhD/workspace/git_clone_repos/fast-coref/models/joint_best"
     # model = Inference(model_str)
     model = Inference(model_str, "shtoshni/longformer_coreference_ontonotes")
 

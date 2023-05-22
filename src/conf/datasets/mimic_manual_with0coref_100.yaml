@@ -1,0 +1,10 @@
+mimic_manual_with0coref_100:
+  name: "mimic_manual_with0coref_100"
+  cluster_threshold: 2  # Singletons are ignored for evaluation (also not annotated)
+  canonical_cluster_threshold: 2
+  targeted_eval: False
+  num_train_docs: 80
+  num_dev_docs: 20
+  num_test_docs: 200
+  has_conll: True
+  singleton_file: null  # File path with pseudo-singletons

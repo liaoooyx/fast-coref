@@ -7,7 +7,7 @@ import hashlib
 import json
 from datetime import datetime
 import shutil
-import wandb
+#import wandb
 
 from experiment import Experiment
 
@@ -147,18 +147,18 @@ def main(config):
         if model_name.startswith(config.paths.model_name_prefix):
             model_name = model_name[len(config.paths.model_name_prefix) :]
 
-    if config.use_wandb:
-        # Wandb Initialization
-        try:
-            wandb.init(
-                id=model_name,
-                project="Coreference",
-                config=dict(config),
-                resume=True,
-            )
-        except:
-            # Turn off wandb
-            config.use_wandb = False
+    # if config.use_wandb:
+    #     # Wandb Initialization
+    #     try:
+    #         wandb.init(
+    #             id=model_name,
+    #             project="Coreference",
+    #             config=dict(config),
+    #             resume=True,
+    #         )
+    #     except:
+    #         # Turn off wandb
+    #         config.use_wandb = False
 
     logger.info(f"Start experiment. Model name: {model_name}")
     Experiment(config)

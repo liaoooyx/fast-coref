@@ -14,7 +14,7 @@ trainer:
   # Stop when no improvement in 10 evaluations 
   patience: 10
   max_evals: 100
-  eval_per_k_steps: 941 # if eval_per_k_steps == # of doc, it means eval per epoch, then max_evals is the # of epoch
+  eval_per_k_steps: 1167 # if eval_per_k_steps == # of doc, it means eval per epoch, then max_evals is the # of epoch
 
 use_wandb: False
 

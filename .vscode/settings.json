@@ -1,0 +1,13 @@
+{
+    "python.analysis.extraPaths": [
+        "/home/yuxiangliao/PhD/workspace/git_clone_repos/fast-coref/src",
+        "/home/yuxiangliao/PhD/workspace/VSCode_workspace/str_rep_coref/src",
+    ],
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "${workspaceFolder}/src:/home/yuxiangliao/PhD/workspace/VSCode_workspace/str_rep_coref/src"
+    },
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": false,
+    "terminal.integrated.scrollback": 99999,
+}

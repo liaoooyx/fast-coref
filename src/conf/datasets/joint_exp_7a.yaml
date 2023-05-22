@@ -1,0 +1,3 @@
+defaults:
+  - ontonotes
+  - mimic_silver_ensemble_1k

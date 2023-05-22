@@ -15,3 +15,4 @@ wandb/
 coref_resources/
 fast-coref-model-backup/
 conf_backup/
+src_old/
