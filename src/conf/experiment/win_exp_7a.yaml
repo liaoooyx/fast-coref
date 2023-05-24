@@ -1,0 +1,37 @@
+# @package _global_
+
+# Use the pre-trained fast_joint encoder
+# Train on OntoNotes and i2b2
+
+defaults:
+  # litbank
+  - override /datasets: joint_exp_7a
+  - override /trainer: train.yaml
+  # The pre-trained doc_encoder model is downloaded and cached locally
+  - override /model/doc_encoder/transformer: longformer_joint_win_local
+
+trainer:
+  log_frequency: 10
+  # Stop when no improvement in 10 evaluations 
+  patience: 2
+  max_evals: 50
+  eval_per_k_steps: 200
+
+use_wandb: False
+
+# There are two cases where we don't resume training:
+# (a) The dev performance has not improved for the allowed patience parameter number of evaluations.
+# (b) Number of gradient updates is already >= Total training steps.
+
+
+datasets:
+  ontonotes:
+    num_train_docs: 100
+  mimic_silver_ensemble_1k:
+    num_train_docs: 100
+
+
+model:
+  doc_encoder:
+    add_speaker_tokens: True
+    finetune: False

@@ -7,8 +7,8 @@ seed: 45
 train: True
 use_wandb: False
 
-# Override encoder can be used during evaluation to override the encoder used during training
-# Sample use:
+# The override_encoder can be used during evaluation to override the encoder used during training
+# Example usage:
 # python main.py experiment=eval_all paths.model_dir=../models/ontonotes_best/
 #  model/doc_encoder/transformer=longformer_ontonotes override_encoder=True
 # Here we override the longformer_large encoder with longformer_ontonotes encoder uploaded on Huggingface
