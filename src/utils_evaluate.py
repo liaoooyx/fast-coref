@@ -1,21 +1,20 @@
-import os
-import logging
-import time
 import json
-import torch
+import logging
+import os
+import time
+from collections import Counter, OrderedDict
 from os import path
-from collections import OrderedDict, Counter
-
-from coref_utils.metrics import CorefEvaluator
-from coref_utils.conll import evaluate_conll
-from coref_utils.utils import get_mention_to_cluster, is_aligned, filter_clusters
-
-from model.utils import action_sequences_to_clusters
-from model.entity_ranking_model import EntityRankingModel
-
-from omegaconf import DictConfig
 from typing import Dict
+
+import torch
+from omegaconf import DictConfig
 from torch import Tensor
+
+from coref_utils.conll import evaluate_conll
+from coref_utils.metrics import CorefEvaluator
+from coref_utils.utils import filter_clusters, get_mention_to_cluster, is_aligned
+from model.entity_ranking_model import EntityRankingModel
+from model.utils import action_sequences_to_clusters
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger()
@@ -205,7 +204,7 @@ def full_coref_evaluation(
                 result_dict["fscore"] = round(average_f1, 1)
 
                 logger.info(
-                    "(CoNLL) F-score : %.1f, MUC: %.1f, Bcub: %.1f, CEAFE: %.1f"
+                    "(CoNLL) F-score : %.3f, MUC: %.3f, Bcub: %.3f, CEAFE: %.3f"
                     % (
                         average_f1,
                         conll_results["muc"]["f"],
