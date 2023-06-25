@@ -76,21 +76,13 @@ def full_coref_evaluation(
             pred_mentions, mention_scores, gt_actions, pred_actions = model(example)
 
             # Process predicted clusters
-            raw_predicted_clusters = action_sequences_to_clusters(
-                pred_actions, pred_mentions
-            )
-            predicted_clusters = filter_clusters(
-                raw_predicted_clusters, threshold=cluster_threshold
-            )
+            raw_predicted_clusters = action_sequences_to_clusters(pred_actions, pred_mentions)
+            predicted_clusters = filter_clusters(raw_predicted_clusters, threshold=cluster_threshold)
             mention_to_predicted = get_mention_to_cluster(predicted_clusters)
 
-            gold_clusters = filter_clusters(
-                example["clusters"], threshold=cluster_threshold
-            )
+            gold_clusters = filter_clusters(example["clusters"], threshold=cluster_threshold)
             mention_to_gold = get_mention_to_cluster(gold_clusters)
-            evaluator.update(
-                predicted_clusters, gold_clusters, mention_to_predicted, mention_to_gold
-            )
+            evaluator.update(predicted_clusters, gold_clusters, mention_to_predicted, mention_to_gold)
 
             elapsed_time = time.time() - start_time
             inference_time += elapsed_time
@@ -105,13 +97,9 @@ def full_coref_evaluation(
 
             # Oracle clustering - Best performance possible given the predicted mentions
             oracle_clusters = action_sequences_to_clusters(gt_actions, pred_mentions)
-            oracle_clusters = filter_clusters(
-                oracle_clusters, threshold=cluster_threshold
-            )
+            oracle_clusters = filter_clusters(oracle_clusters, threshold=cluster_threshold)
             mention_to_oracle = get_mention_to_cluster(oracle_clusters)
-            oracle_evaluator.update(
-                oracle_clusters, gold_clusters, mention_to_oracle, mention_to_gold
-            )
+            oracle_evaluator.update(oracle_clusters, gold_clusters, mention_to_oracle, mention_to_gold)
 
             log_example = dict(example)
             log_example["pred_mentions"] = pred_mentions
@@ -135,16 +123,10 @@ def full_coref_evaluation(
         perf_str: str = ""
         # Print individual metrics
         for indv_metric, indv_evaluator in zip(config.metrics, evaluator.evaluators):
-            perf_str += (
-                ", " + indv_metric + ": {:.1f}".format(indv_evaluator.get_f1() * 100)
-            )
+            perf_str += ", " + indv_metric + ": {:.1f}".format(indv_evaluator.get_f1() * 100)
             result_dict[indv_metric] = OrderedDict()
-            result_dict[indv_metric]["recall"] = round(
-                indv_evaluator.get_recall() * 100, 1
-            )
-            result_dict[indv_metric]["precision"] = round(
-                indv_evaluator.get_precision() * 100, 1
-            )
+            result_dict[indv_metric]["recall"] = round(indv_evaluator.get_recall() * 100, 1)
+            result_dict[indv_metric]["precision"] = round(indv_evaluator.get_precision() * 100, 1)
             result_dict[indv_metric]["fscore"] = round(indv_evaluator.get_f1() * 100, 1)
 
         result_dict["fscore"] = round(evaluator.get_f1() * 100, 1)
@@ -158,14 +140,9 @@ def full_coref_evaluation(
             # (1) Only use CoNLL evaluator script for final evaluation
             # (2) CoNLL score only makes sense when the evaluation is using the canonical cluster threshold
             # (3) Check if the scorer and CoNLL annotation directory exist
-            is_canonical = (
-                dataset_config.cluster_threshold
-                == dataset_config.canonical_cluster_threshold
-            )
+            is_canonical = dataset_config.cluster_threshold == dataset_config.canonical_cluster_threshold
             try:
-                path_exists_bool = path.exists(
-                    config.paths.conll_scorer
-                ) and path.exists(conll_data_dir[dataset])
+                path_exists_bool = path.exists(config.paths.conll_scorer) and path.exists(conll_data_dir[dataset])
             except TypeError:
                 # This exception occurs when NoneType is passed along
                 path_exists_bool = False
@@ -175,44 +152,39 @@ def full_coref_evaluation(
                 gold_path = path.join(conll_data_dir[dataset], f"{split}.conll")
                 prediction_file = path.join(log_dir, f"{split}.conll")
 
-                print(path.abspath(gold_path))
-                print(path.abspath(prediction_file))
-                print(config.paths.conll_scorer)
+                if os.path.exists(path.abspath(gold_path)):
+                    print(path.abspath(gold_path))
+                    print(path.abspath(prediction_file))
+                    print(config.paths.conll_scorer)
 
-                conll_results = evaluate_conll(
-                    config.paths.conll_scorer,
-                    gold_path,
-                    coref_predictions,
-                    subtoken_maps,
-                    prediction_file,
-                )
-
-                for indv_metric in config.metrics:
-                    result_dict[indv_metric]["recall"] = round(
-                        conll_results[indv_metric.lower()]["r"], 1
-                    )
-                    result_dict[indv_metric]["precision"] = round(
-                        conll_results[indv_metric.lower()]["p"], 1
-                    )
-                    result_dict[indv_metric]["fscore"] = round(
-                        conll_results[indv_metric.lower()]["f"], 1
+                    conll_results = evaluate_conll(
+                        config.paths.conll_scorer,
+                        gold_path,
+                        coref_predictions,
+                        subtoken_maps,
+                        prediction_file,
                     )
 
-                average_f1 = sum(
-                    results["f"] for results in conll_results.values()
-                ) / len(conll_results)
-                result_dict["fscore"] = round(average_f1, 1)
+                    for indv_metric in config.metrics:
+                        result_dict[indv_metric]["recall"] = round(conll_results[indv_metric.lower()]["r"], 1)
+                        result_dict[indv_metric]["precision"] = round(conll_results[indv_metric.lower()]["p"], 1)
+                        result_dict[indv_metric]["fscore"] = round(conll_results[indv_metric.lower()]["f"], 1)
 
-                logger.info(
-                    "(CoNLL) F-score : %.3f, MUC: %.3f, Bcub: %.3f, CEAFE: %.3f"
-                    % (
-                        average_f1,
-                        conll_results["muc"]["f"],
-                        conll_results["bcub"]["f"],
-                        conll_results["ceafe"]["f"],
+                    average_f1 = sum(results["f"] for results in conll_results.values()) / len(conll_results)
+                    result_dict["fscore"] = round(average_f1, 1)
+
+                    logger.info(
+                        "(CoNLL) F-score : %.3f, MUC: %.3f, Bcub: %.3f, CEAFE: %.3f"
+                        % (
+                            average_f1,
+                            conll_results["muc"]["f"],
+                            conll_results["bcub"]["f"],
+                            conll_results["ceafe"]["f"],
+                        )
                     )
-                )
-                logger.info("Prediction file: %s" % path.abspath(prediction_file))
+                    logger.info("Prediction file: %s" % path.abspath(prediction_file))
+                else:
+                    print(f"{gold_path} not exist")
         except AttributeError:
             pass
 
@@ -221,11 +193,7 @@ def full_coref_evaluation(
         logger.handlers[0].flush()
 
     logger.info("Inference time: %.2f" % inference_time)
-    max_mem = (
-        (torch.cuda.max_memory_allocated() / (1024**3))
-        if torch.cuda.is_available()
-        else 0.0
-    )
+    max_mem = (torch.cuda.max_memory_allocated() / (1024**3)) if torch.cuda.is_available() else 0.0
     logger.info("Max inference memory: %.1f GB" % max_mem)
 
     return result_dict
@@ -264,9 +232,7 @@ def targeted_coref_evaluation(
                 if isinstance(log_example[key], Tensor):
                     del log_example[key]
 
-            predicted_clusters = action_sequences_to_clusters(
-                pred_actions, pred_mentions
-            )
+            predicted_clusters = action_sequences_to_clusters(pred_actions, pred_mentions)
             predicted_clusters = filter_clusters(predicted_clusters, threshold=1)
             mention_to_predicted = get_mention_to_cluster(predicted_clusters)
 
@@ -298,19 +264,13 @@ def targeted_coref_evaluation(
                 if span_not_found:
                     counter["span_not_found"] += 1
 
-                corr = (a_pred == document["a_label"]) and (
-                    b_pred == document["b_label"]
-                )
+                corr = (a_pred == document["a_label"]) and (b_pred == document["b_label"])
                 log_example["correct"] = corr
-                counter["corr"] += (a_pred == document["a_label"]) and (
-                    b_pred == document["b_label"]
-                )
+                counter["corr"] += (a_pred == document["a_label"]) and (b_pred == document["b_label"])
                 counter["total"] += 1
 
             elif dataset == "gap":
-                for gt, pred in zip(
-                    [document["a_label"], document["b_label"]], [a_pred, b_pred]
-                ):
+                for gt, pred in zip([document["a_label"], document["b_label"]], [a_pred, b_pred]):
                     if gt and pred:
                         counter["true_positive"] += 1
                     elif gt and (not pred):
@@ -321,9 +281,7 @@ def targeted_coref_evaluation(
                         counter["false_positive"] += 1
 
             else:
-                raise ValueError(
-                    f"Dataset {dataset} evaluation is currently not supported"
-                )
+                raise ValueError(f"Dataset {dataset} evaluation is currently not supported")
 
             log_example["a_pred"] = a_pred
             log_example["b_pred"] = b_pred
@@ -336,17 +294,10 @@ def targeted_coref_evaluation(
     if dataset == "wsc":
         result_dict = {"fscore": (counter["corr"] * 100) / counter["total"]}
         logger.info("Accuracy: %.1f" % result_dict["fscore"])
-        logger.info(
-            "Span not found: %.1f%%"
-            % ((counter["span_not_found"] * 100) / counter["total"])
-        )
+        logger.info("Span not found: %.1f%%" % ((counter["span_not_found"] * 100) / counter["total"]))
     elif dataset == "gap":
-        prec = counter["true_positive"] / (
-            counter["true_positive"] + counter["false_positive"]
-        )
-        recall = counter["true_positive"] / (
-            counter["true_positive"] + counter["false_negative"]
-        )
+        prec = counter["true_positive"] / (counter["true_positive"] + counter["false_positive"])
+        recall = counter["true_positive"] / (counter["true_positive"] + counter["false_negative"])
 
         result_dict["prec"], result_dict["recall"] = prec * 100, recall * 100
         if prec and recall:
@@ -370,9 +321,7 @@ def coref_evaluation(
 
     dataset_config = config.datasets[dataset]
     if dataset_config.get("targeted_eval", False):
-        return targeted_coref_evaluation(
-            config, model, data_iter_map, dataset, split=split
-        )
+        return targeted_coref_evaluation(config, model, data_iter_map, dataset, split=split)
     else:
         return full_coref_evaluation(
             config,
