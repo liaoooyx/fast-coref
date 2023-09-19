@@ -1,15 +1,18 @@
+from typing import Dict
+
+import torch
 import torch.nn as nn
+import transformers
+from omegaconf import DictConfig
 from transformers import (
     AutoModel,
     AutoTokenizer,
-    PreTrainedTokenizerFast,
+    GPT2Model,
+    LlamaModel,
     PreTrainedModel,
+    PreTrainedTokenizerFast,
+    T5EncoderModel,
 )
-import torch
-
-from omegaconf import DictConfig
-from typing import Dict
-import transformers
 
 transformers.logging.set_verbosity_error()
 
@@ -32,17 +35,33 @@ class BaseDocEncoder(nn.Module):
 
         model_str: str = config.transformer.model_str
 
-        self.lm_encoder: PreTrainedModel = AutoModel.from_pretrained(
-            pretrained_model_name_or_path=model_str,
-            output_hidden_states=False,
-            add_pooling_layer=False,
-        )
+        if "t5" in model_str.lower():
+            self.lm_encoder: PreTrainedModel = T5EncoderModel.from_pretrained(
+                pretrained_model_name_or_path=model_str,
+                output_hidden_states=False,
+            )
+        elif "gpt2" in model_str.lower():
+            self.lm_encoder: PreTrainedModel = GPT2Model.from_pretrained(
+                pretrained_model_name_or_path=model_str,
+                output_hidden_states=False,
+            )
+        elif "llama" in model_str.lower():
+            self.lm_encoder: PreTrainedModel = LlamaModel.from_pretrained(
+                pretrained_model_name_or_path=model_str,
+                output_hidden_states=False,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float16,
+            )
+        else:
+            self.lm_encoder: PreTrainedModel = AutoModel.from_pretrained(
+                pretrained_model_name_or_path=model_str,
+                output_hidden_states=False,
+                add_pooling_layer=False,
+            )
         if gradient_checkpointing:
             self.lm_encoder.gradient_checkpointing_enable()
 
-        self.tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=model_str, use_fast=True
-        )
+        self.tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_str, use_fast=True)
         if config.add_speaker_tokens:
             self.tokenizer.add_special_tokens(
                 {

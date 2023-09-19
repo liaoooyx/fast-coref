@@ -1,0 +1,5 @@
+name: 'longformer'
+model_size: 'large'
+model_str: '/root/autodl-tmp/hg_offline_models/longformer-large'
+max_encoder_segment_len: 4096
+max_segment_len: 4096

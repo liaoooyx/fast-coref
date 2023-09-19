@@ -1,0 +1,5 @@
+name: 'gpt2'
+model_size: 'base'
+model_str: '/root/autodl-tmp/hg_offline_models/gpt2'
+max_encoder_segment_len: 1024
+max_segment_len: 1024

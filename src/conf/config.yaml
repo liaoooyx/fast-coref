@@ -34,19 +34,19 @@ continue_training: False
 
 defaults:
   - _self_
-  - datasets: joint_onto_i2b2_mimic
+  - datasets: radcoref
   - model: model
   - optimizer: adam
   - trainer: train
   
-  - infra: mylinux
-  - experiment: arcca_exp_2
+  - infra: autodl
+  - experiment: autodl_comparison
 
 paths:
   resource_dir: ${infra.project_dir}/coref_resources
   base_data_dir: ${paths.resource_dir}/data
   conll_scorer: ${paths.resource_dir}/reference-coreference-scorers/scorer.pl
-  base_model_dir: ${infra.project_dir}/models
+  base_model_dir: /root/autodl-tmp/fast_coref/models
   
   # In [train] mode, {model_dir} will be set to {base_model_dir}/{model_name_prefix}+{model_name}, even if we assign a value here.
   # And the {model_dir} folder will be created if not exist.

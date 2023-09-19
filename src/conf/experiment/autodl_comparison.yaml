@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - override /datasets: radcoref_475
+  - override /trainer: train.yaml
+  - override /model/doc_encoder/transformer: flant5_base_autodl
+
+# longformer_joint_autodl, longformer_large_autodl, gpt2_autodl, llama2_7b_autodl, bert_base_autodl, spanbert_base_autodl, flant5_base_autodl, flant5_large_autodl
+
+model:
+  doc_encoder:
+    finetune: True
+
+trainer:
+  log_frequency: 50
+  patience: 10
+  max_evals: 100
+  eval_per_k_steps: 475

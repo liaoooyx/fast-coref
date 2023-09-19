@@ -23,20 +23,18 @@ class IndependentDocEncoder(BaseDocEncoder):
         if num_chunks == 1:
             attn_mask = None
         else:
-            attn_mask = get_sequence_mask(
-                torch.tensor(sent_len_list, device=self.device)
-            )
+            attn_mask = get_sequence_mask(torch.tensor(sent_len_list, device=self.device))
 
         if not self.config.finetune:
             with torch.no_grad():
-                outputs = self.lm_encoder(
-                    doc_tens, attention_mask=attn_mask
-                )  # C x L x E
+                # For T5, we always need an input sequence and a corresponding target sequence
+                outputs = self.lm_encoder(doc_tens, attention_mask=attn_mask)  # C x L x E
         else:
             outputs = self.lm_encoder(doc_tens, attention_mask=attn_mask)  # C x L x E
 
         encoded_repr = outputs[0]
 
+        # Ignore the CLS/BOS and SEP/EOS tokens
         unpadded_encoded_output = []
         for idx, sent_len in enumerate(sent_len_list):
             unpadded_encoded_output.append(encoded_repr[idx, 1 : sent_len + 1, :])

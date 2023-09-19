@@ -1,0 +1,5 @@
+name: 'flant5'
+model_size: 'large'
+model_str: '/root/autodl-tmp/hg_offline_models/flan-t5-large'
+max_encoder_segment_len: 512
+max_segment_len: 512

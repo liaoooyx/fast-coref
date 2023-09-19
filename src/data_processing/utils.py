@@ -1,9 +1,14 @@
 import argparse
-import os
 import collections
+import os
 from os import path
-from data_processing.constants import MODEL_TO_MAX_LEN, MODEL_TO_MODEL_STR
-from transformers import LongformerTokenizerFast, AutoTokenizer
+
+try:
+    from data_processing.constants import MODEL_TO_MAX_LEN, MODEL_TO_MODEL_STR
+except ModuleNotFoundError:
+    from constants import MODEL_TO_MAX_LEN, MODEL_TO_MODEL_STR
+
+from transformers import AutoTokenizer, LongformerTokenizerFast
 
 
 class BaseDocumentState:
@@ -49,9 +54,7 @@ def split_into_segments(document_state, max_segment_len, constraints1, constrain
         while end >= current and not constraints1[end]:
             end -= 1
         if end < current:
-            end = min(
-                current + max_segment_len - 1 - 2, len(document_state.subtokens) - 1
-            )
+            end = min(current + max_segment_len - 1 - 2, len(document_state.subtokens) - 1)
             while end >= current and not constraints2[end]:
                 end -= 1
             if end < current:
@@ -80,9 +83,7 @@ def get_sentence_map(segments, sentence_end):
 
 def get_tokenizer(model_str):
     if "longformer" in model_str:
-        tokenizer = LongformerTokenizerFast.from_pretrained(
-            model_str, add_prefix_space=True
-        )
+        tokenizer = LongformerTokenizerFast.from_pretrained(model_str, add_prefix_space=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_str)
 
@@ -112,9 +113,7 @@ def parse_args():
 
     if args.output_dir is None:
         base_dir = path.dirname(args.input_dir.rstrip("/"))
-        args.output_dir = path.join(
-            base_dir, args.model + ("_speaker" if args.add_speaker else "")
-        )
+        args.output_dir = path.join(base_dir, args.model + ("_speaker" if args.add_speaker else ""))
 
     assert path.exists(args.input_dir)
     assert MODEL_TO_MAX_LEN[args.model] >= args.seg_len

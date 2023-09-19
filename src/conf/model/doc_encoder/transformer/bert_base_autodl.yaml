@@ -1,0 +1,5 @@
+name: 'bert'
+model_size: 'base'
+model_str: '/root/autodl-tmp/hg_offline_models/bert-base-uncased'
+max_encoder_segment_len: 512
+max_segment_len: 512

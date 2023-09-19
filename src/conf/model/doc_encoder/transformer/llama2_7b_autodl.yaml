@@ -1,0 +1,5 @@
+name: 'llama2'
+model_size: '7b'
+model_str: '/root/autodl-tmp/hg_offline_models/Llama-2-7b-hf'
+max_encoder_segment_len: 4096
+max_segment_len: 4096

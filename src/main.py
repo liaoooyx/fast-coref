@@ -1,15 +1,18 @@
-import os
-from os import path
-import logging
-from omegaconf import OmegaConf
-import hydra
 import hashlib
 import json
-from datetime import datetime
+import logging
+import os
 import shutil
-#import wandb
+import time
+from datetime import datetime
+from os import path
 
+import hydra
 from experiment import Experiment
+from omegaconf import OmegaConf
+
+# import wandb
+
 
 # logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger()
@@ -17,20 +20,20 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def get_model_name(config):
-#     masked_copy = OmegaConf.masked_copy(
-#         config, ["datasets", "model", "trainer", "optimizer"]
-#     )
-#     print(f"\nmasked_copy:{masked_copy}\n")
-#     encoded = json.dumps(OmegaConf.to_container(masked_copy), sort_keys=True).encode()
-#     # encoded['seed']=
-#     hash_obj = hashlib.md5()
-#     hash_obj.update(encoded)
-#     hash_obj.update(f"seed: {config.seed}".encode())
+    #     masked_copy = OmegaConf.masked_copy(
+    #         config, ["datasets", "model", "trainer", "optimizer"]
+    #     )
+    #     print(f"\nmasked_copy:{masked_copy}\n")
+    #     encoded = json.dumps(OmegaConf.to_container(masked_copy), sort_keys=True).encode()
+    #     # encoded['seed']=
+    #     hash_obj = hashlib.md5()
+    #     hash_obj.update(encoded)
+    #     hash_obj.update(f"seed: {config.seed}".encode())
 
-#     model_hash = str(hash_obj.hexdigest())
+    #     model_hash = str(hash_obj.hexdigest())
 
-    currTime = datetime.now().strftime('%y%m%d%H%M%S')
-    
+    currTime = datetime.now().strftime("%y%m%d%H%M%S")
+
     if len(config.datasets) > 1:
         dataset_name = "joint"
     else:
@@ -54,9 +57,7 @@ def main_train(config):
         model_name = config.paths.model_name
 
     # Ignore the original model_dir and create a new path.
-    config.paths.model_dir = path.join(
-        config.paths.base_model_dir, config.paths.model_name_prefix + model_name
-    )
+    config.paths.model_dir = path.join(config.paths.base_model_dir, config.paths.model_name_prefix + model_name)
     # Ignore the original best_model_dir and create a new path.
     config.paths.best_model_dir = path.join(config.paths.model_dir, "best")
 
@@ -67,18 +68,14 @@ def main_train(config):
 
     # If {paths.model_path} in config.yaml is null, then create/replace both {paths.model_path} and {paths.best_model_dir}
     if config.paths.model_path is None:
-        config.paths.model_path = path.abspath(
-            path.join(config.paths.model_dir, config.paths.model_filename)
-        )
-        config.paths.best_model_path = path.abspath(
-            path.join(config.paths.best_model_dir, config.paths.model_filename)
-        )
-        
+        config.paths.model_path = path.abspath(path.join(config.paths.model_dir, config.paths.model_filename))
+        config.paths.best_model_path = path.abspath(path.join(config.paths.best_model_dir, config.paths.model_filename))
+
     # If {paths.model_path} has value and {paths.best_model_dir} is null, then make them be the same path
     # Which means we can't differ the current model and the best model.
     if config.paths.best_model_path is None and (config.paths.model_path is not None):
         config.paths.best_model_path = config.paths.model_path
-    
+
     # Custom setting
     # We want to fine-tune the pre-trained model. So we copy the pre-trained model from {paths.pretrain_model_dir} to {paths.best_model_dir}
     # When the model is initializing at the training stage, it will load checkpoint from {best_model_path} when {model_dir} is not exist
@@ -97,7 +94,7 @@ def main_train(config):
         logger.debug(f"Copied {pretrain_model_path} -> {config.paths.best_model_path}")
     elif config.continue_training:
         logger.debug(f"Continue training {config.paths.model_path}")
-            
+
     # Dump config file
     config_file = path.join(config.paths.model_dir, "config.json")
     with open(config_file, "w") as f:
@@ -123,9 +120,7 @@ def main_eval(config):
 
     # The path would look like: ./fast-coref/models/coref_litbank_cv_0_fb7c919da4efcfe7579bbdbda9822e4e/best/model.pth
     # or ./fast-coref/models/joint_best/model.pth
-    config.paths.best_model_path = path.abspath(
-        path.join(config.paths.best_model_dir, config.paths.model_filename)
-    )
+    config.paths.best_model_path = path.abspath(path.join(config.paths.best_model_dir, config.paths.model_filename))
     logger.debug(f"Rewrote paths config:{config.paths}")
 
 
@@ -137,8 +132,8 @@ def main(config):
         model_name = main_train(config)
     else:
         main_eval(config)
-        
-        # Identify the model name according to its parent folder name, 
+
+        # Identify the model name according to its parent folder name,
         # it would be like: litbank_cv_0_fb7c919da4efcfe7579bbdbda9822e4e, joint_best, etc.
         # Notice that the paths.model_name_prefix in config.yaml (i.e. coref_) will be removed from the folder name.
         # The model name mainly design for wandb which we don't use (and also for showing and logging information).
@@ -160,8 +155,11 @@ def main(config):
     #         # Turn off wandb
     #         config.use_wandb = False
 
-    logger.info(f"Start experiment. Model name: {model_name}")
+    logger.info("Start experiment. Model name: %s", model_name)
+    start = time.time()
     Experiment(config)
+    end = time.time()
+    logger.info("Time: %d minutes", (end - start) / 60)
 
 
 if __name__ == "__main__":
@@ -171,6 +169,6 @@ if __name__ == "__main__":
     sys.argv.append("hydra/job_logging=none")
     # Logging level: true - DEBUG, false - INFO
     sys.argv.append("hydra.verbose=true")
-    
+
     logger.debug(f"Launch fast-coref")
     main()
