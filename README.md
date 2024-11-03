@@ -10,14 +10,16 @@ The repo is forked from [shtoshni/fast-coref](https://github.com/shtoshni/fast-c
 
 We create our env with the following:
 
-1. `conda create --name coref python=3.9 -y`
+1. `conda create --name arrg_coref python=3.9 -y`
 2. `conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch`
     1. `nvcc -V` to check cuda version
     2. `python` -> `import torch` -> `print(torch.__version__)` to check torch+cuda version
     3. Find the correct torch version+cuda from [here](https://pytorch.org/get-started/previous-versions/) to install (for us: pytorch1.12.1 + cuda11.3)
-3. `pip install transformers` (4.33.1)
-4. `pip install scipy` (1.11.2)
+3. `pip install transformers==4.33.1` (4.33.1)
+4. `pip install scipy==1.11.2` (1.11.2)
 6. `pip install hydra-core --upgrade` (1.3.2)
+7. `conda install -c conda-forge spacy`
+    - `python -m spacy download en_core_web_sm`
 
 ### Optional 
 1. `pip install sentencepiece` (0.1.99). Required for LLaMA2

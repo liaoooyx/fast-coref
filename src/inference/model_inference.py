@@ -1,12 +1,15 @@
+import sys
+
+sys.path.append("/home/yuxiang/liao/workspace/fast-coref/src")
+
 from os import path
 
 import torch
-from omegaconf import OmegaConf
-from transformers import AutoModel, AutoTokenizer
-
 from inference.tokenize_doc import basic_tokenize_doc, tokenize_and_segment_doc
 from model.entity_ranking_model import EntityRankingModel
 from model.utils import action_sequences_to_clusters
+from omegaconf import OmegaConf
+from transformers import AutoModel, AutoTokenizer
 
 
 class Inference:
@@ -34,12 +37,8 @@ class Inference:
                 # else:
                 # 	doc_encoder_dir = encoder_name
                 # Load the encoder
-                self.model.mention_proposer.doc_encoder.lm_encoder = AutoModel.from_pretrained(
-                    pretrained_model_name_or_path=doc_encoder_dir
-                )
-                self.model.mention_proposer.doc_encoder.tokenizer = AutoTokenizer.from_pretrained(
-                    pretrained_model_name_or_path=doc_encoder_dir
-                )
+                self.model.mention_proposer.doc_encoder.lm_encoder = AutoModel.from_pretrained(pretrained_model_name_or_path=doc_encoder_dir)
+                self.model.mention_proposer.doc_encoder.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=doc_encoder_dir)
 
             if torch.cuda.is_available():
                 self.model.cuda()
@@ -96,15 +95,12 @@ class Inference:
 
 
 if __name__ == "__main__":
-    model_str = "/home/yuxiangliao/PhD/workspace/git_clone_repos/fast-coref/models/joint_best"
+    model_str = "/home/yuxiang/liao/resources/downloaded_models/coref_model_9b02_25_4/best"  # exp11
+    encoder_name = "/home/yuxiang/liao/resources/downloaded_models/longformer_coreference_joint"
     # model = Inference(model_str)
-    model = Inference(model_str, "shtoshni/longformer_coreference_ontonotes")
+    model = Inference(model_str, encoder_name)
 
     # doc = " ".join(open("/home/shtoshni/Research/coref_resources/data/ccarol/doc.txt").readlines())
-    doc = (
-        'The practice of referring to Voldemort as "He Who Must Not Be Named" might have begun when he used a '
-        "Taboo. This is, however, unlikely because Dumbledore encouraged using his proper name so as to not fear "
-        "the name. If saying the Dark Lord’s name would have endangered people, he would not have encouraged it."
-    )
+    doc = 'The practice of referring to Voldemort as "He Who Must Not Be Named" might have begun when he used a ' "Taboo. This is, however, unlikely because Dumbledore encouraged using his proper name so as to not fear " "the name. If saying the Dark Lord’s name would have endangered people, he would not have encouraged it."
     output_dict = model.perform_coreference(doc)
     print(output_dict["clusters"])
