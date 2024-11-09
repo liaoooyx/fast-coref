@@ -39,14 +39,14 @@ defaults:
   - optimizer: adam
   - trainer: train
   
-  - infra: autodl
-  - experiment: autodl_comparison
+  - infra: arcca
+  - experiment: mylinux_test
 
 paths:
   resource_dir: ${infra.project_dir}/coref_resources
-  base_data_dir: ${paths.resource_dir}/data
+  base_data_dir: /home/yuxiang/liao/resources/datasets/radcoref
   conll_scorer: ${paths.resource_dir}/reference-coreference-scorers/scorer.pl
-  base_model_dir: /root/autodl-tmp/fast_coref/models
+  base_model_dir: /home/yuxiang/liao/resources/downloaded_models
   
   # In [train] mode, {model_dir} will be set to {base_model_dir}/{model_name_prefix}+{model_name}, even if we assign a value here.
   # And the {model_dir} folder will be created if not exist.
@@ -63,7 +63,7 @@ paths:
   
   # In [train] mode, it will get a new model name if {model_name} is null. We can assign the model name here to prevent auto create. 
   # In [eval] mode, it will be automatically identified according to the {model_dir}
-  model_name: ???
+  model_name: null
   
   # In [eval] mode, this is used to stript the prefix of model folder name in order to get the model name.
   model_name_prefix: 'coref_'

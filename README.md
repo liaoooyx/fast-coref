@@ -79,10 +79,9 @@ Check and modify config files in
 
 ```shell
 HF_DATASETS_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
-python3 /root/workspace/fast-coref/src/main.py \
-infra=autodl \
-experiment=autodl_comparison \
-paths.model_name=exp6_flant5_2
+python /home/yuxiang/liao/workspace/fast-coref/src/main.py \
+infra=arcca \
+experiment=mylinux_test
 ```
 
 
